@@ -15,10 +15,11 @@ from nltk.corpus import stopwords
 from string import punctuation
 from nltk.corpus import stopwords
 import pandas as pd
+import nltk
 
 
 notstopwords = set(('not', 'no', 'mustn', "mustn\'t"))
-stopwords = set( stopwords.words('english')) - notstopwords
+stopwords = set(stopwords.words('english')) - notstopwords
 
 lemmatizer = WordNetLemmatizer()
 T = tokenizer.TweetTokenizer(preserve_handles=False, preserve_hashes=False, preserve_case=False, preserve_url=False, regularize=True)
@@ -35,7 +36,15 @@ def standardization(tweet):
     return tweet
 
 
+def read_dataset(path):
+    df = pd.read_csv(path, sep="\t")
+    df["Tweet"] = df["Tweet"].apply(lambda x: standardization(x))
+    df["Intensity Class"] = df["Intensity Class"].apply(lambda x: x[:x.index(":")])
+    return df["Tweet"], df["Intensity Class"]
+
+
 def main():
-    read_dataset('../resources/2018-Valence-oc-En-train.txt')
+    t, d = read_dataset('../resources/2018-Valence-oc-En-train.txt')
+    print(d)
 
 main()
