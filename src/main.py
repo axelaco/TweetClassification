@@ -6,5 +6,6 @@ import emoji
 import preprocessing
 
 if __name__ == '__main__':
+    preprocessing.tokenize("../resources/2018-Valence-oc-En-dev.txt")
     print("hello")
 

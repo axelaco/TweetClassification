@@ -3,7 +3,6 @@ import pandas as pd
 from unidecode import unidecode
 import emoji
 
-
 def treatEmoji(tweet):
     return ' '.join(emoji.str2emoji(unidecode(tweet).lower().split()))
 
