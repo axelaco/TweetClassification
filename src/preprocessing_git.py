@@ -35,16 +35,22 @@ def standardization(tweet):
     tweet = ' '.join(tweets)
     return tweet
 
+def standardization2(tweet):
+    tweet = re.sub(r"\\u2019", "'",tweet)
+    tweet = re.sub(r"\\u002c", "'",tweet)
+    tweet = re.sub(r" [0-9]+ "," ",tweet)
+    tweet = re.sub(r"RT ", "", tweet)
+    tweets = T.tokenize(tweet)
+    tweets = emoji.str2emoji(tweets)
+    tweets = [lemmatizer.lemmatize(i,j[0].lower()) if j[0].lower() in ['a','n','v']  else lemmatizer.lemmatize(i) for i,j in pos_tag(tweets)]
+    tweets = [tweet for tweet in tweets if (tweet not in punctuation) and (tweet not in stopwords)]
+    return tweets
+
+def create_dataset_word2Vec(tweet):
+    return standardization2(tweet)
 
 def read_dataset(path):
     df = pd.read_csv(path, sep="\t")
     df["Tweet"] = df["Tweet"].apply(lambda x: standardization(x))
     df["Intensity Class"] = df["Intensity Class"].apply(lambda x: x[:x.index(":")])
     return df["Tweet"], df["Intensity Class"]
-
-
-def main():
-    t, d = read_dataset('../resources/2018-Valence-oc-En-train.txt')
-    print(d)
-
-main()
