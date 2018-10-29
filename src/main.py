@@ -14,7 +14,7 @@ def createWord2Vec(fileData, modelFile):
             data.append(preprocessing_git.create_dataset_word2Vec(line))
     
     # train model
-    model = Word2Vec(data, size=300, window=3, min_count=1)
+    model = Word2Vec(data, size=300, window=3, min_count=1, sg=1)
 
     # summarize vocabulary
     words = list(model.wv.vocab)
