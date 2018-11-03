@@ -10,7 +10,7 @@ from tensorflow import keras
 import emoji
 import preprocessing_git
 from gensim.models import Word2Vec, KeyedVectors
-
+from word2vecUtils import  processEmolex
 def view_bar(num, total):
     rate = float(num) / total
     rate_num = int(rate * 100) + 1
@@ -54,62 +54,6 @@ def smallDataset():
     with open('data2.bin', 'wb') as fp:
        pickle.dump(data, fp)
 
-    
-def processEmojiValence(word):
-    ones = np.ones(7)
-    tmp = np.ones(7)
-    json_data = json.load(open('../resources/emoji_valence.json'))
-    for json_elt in json_data:
-        if json_elt['emoji'] == word:
-            tmp[json_elt['polarity'] + 3] = 0
-            break
-    return ones - tmp
-
-def preprocessDepechMode():
-    data = dict()
-    f = open('../resources/depech_mood.txt', 'r')
-    line = f.readline()
-    ones = np.ones(4)
-    PoS = {'a': 0, 'n': 1, 'v': 2, 'r': 3}
-    for line in f.readlines():
-        tmp = np.ones(4)
-        arr = line.strip().split(';')
-        firstCol = arr[0].split('#')
-        word = firstCol[0]
-        tmp[PoS[firstCol[1]]] = 0
-        data[word] = np.append(ones - tmp, np.array(arr[1:], dtype=np.float))
-    return data
-
-def processDepechMode(data, word):
-    return data[word]
-
-def processEmojiSentimentLexicon(emoji):
-    df = pd.read_csv('../resources/Emoji_Sentiment_Data_v1.0.csv')[['Emoji', 'Occurrences', 'Position', 'Negative', 'Neutral', 'Positive']]
-    df.Occurrences = df.Occurrences.apply(lambda x: float(x))
-    df.Negative = df.Negative.apply(lambda x: float(x))
-    df.Neutral = df.Neutral.apply(lambda x: float(x))
-    df.Positive = df.Positive.apply(lambda x: float(x))
-    
-    df.Negative = df.Negative / df.Occurrences
-    df.Neutral = df.Neutral / df.Occurrences
-    df.Positive = df.Positive / df.Occurrences
-    elt = df[df['Emoji'] == emoji][['Position', 'Negative', 'Neutral', 'Positive']]
-    if len(elt) > 0:
-        return elt.values[0]
-    else:
-        return np.zeros(4)
-
-def processOpinionLexiconEnglish(word):
-    f_pos = open('../resources/opinion-positive-words.txt', 'r')
-    f_neg = open('../resources/opinion-negative-words.txt', 'r')
-    lines_pos = set(f_pos.read().splitlines())
-    lines_neg = set(f_neg.read().splitlines())
-    if (word in lines_pos):
-        return np.array([1, 0])
-    elif (word in lines_neg):
-        return np.array([0, 1])
-    else:
-        return np.zeros(2)
 
 def createWord2Vec(modelFile, dataset):
     data = pickle.load(open(dataset, 'rb'))
@@ -130,6 +74,5 @@ def process_word2Vec(modelFile):
 
 
 if __name__ == '__main__':
-    #createWord2Vec('model2.bin', 'data2.bin')
-    #process_word2Vec('model2.bin')
-    print(processOpinionLexiconEnglish('abrasive'))
+    data = processEmolex()
+    print(data['whimper'])
