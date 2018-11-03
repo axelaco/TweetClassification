@@ -32,6 +32,7 @@ def standardization(tweet):
     tweets = emoji.str2emoji(tweets)
     tweets = [lemmatizer.lemmatize(i,j[0].lower()) if j[0].lower() in ['a','n','v']  else lemmatizer.lemmatize(i) for i,j in pos_tag(tweets)]
     tweets = [tweet for tweet in tweets if (tweet not in punctuation) and (tweet not in stopwords)]
+    tweets = list(filter(lambda x: x.count('.') < 4, tweets))
     tweet = ' '.join(tweets)
     return tweet
 
@@ -44,6 +45,7 @@ def standardization2(tweet):
     tweets = emoji.str2emoji(tweets)
     tweets = [lemmatizer.lemmatize(i,j[0].lower()) if j[0].lower() in ['a','n','v']  else lemmatizer.lemmatize(i) for i,j in pos_tag(tweets)]
     tweets = [tweet for tweet in tweets if (tweet not in punctuation) and (tweet not in stopwords)]
+    tweets = list(filter(lambda x: x.count('.') < 4, tweets))
     return tweets
 
 def create_dataset_word2Vec(tweet):
