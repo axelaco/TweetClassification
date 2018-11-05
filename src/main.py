@@ -57,6 +57,7 @@ def smallDataset():
 
 def createWord2Vec(modelFile, dataset):
     data = pickle.load(open(dataset, 'rb'))
+
     # train model
     model = Word2Vec(data, size=300, window=3, min_count=1, sg=1)
 
@@ -76,3 +77,4 @@ def process_word2Vec(modelFile):
 if __name__ == '__main__':
     data = processEmolex()
     print(data['whimper'])
+
