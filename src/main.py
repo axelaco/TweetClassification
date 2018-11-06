@@ -10,7 +10,6 @@ from tensorflow import keras
 import emoji
 import preprocessing_git
 from gensim.models import Word2Vec, KeyedVectors
-from word2vecUtils import  processEmolex
 def view_bar(num, total):
     rate = float(num) / total
     rate_num = int(rate * 100) + 1
@@ -57,24 +56,19 @@ def smallDataset():
 
 def createWord2Vec(modelFile, dataset):
     data = pickle.load(open(dataset, 'rb'))
-
+    
     # train model
-    model = Word2Vec(data, size=300, window=3, min_count=1, sg=1)
-
-    # summarize vocabulary
-    words = list(model.wv.vocab)
+    model = Word2Vec(data, size=300, window=3, min_count=5, sg=1, workers=8)
 
     # save model
     model.save(modelFile)
-
-def process_word2Vec(modelFile):
+    
+def process_word2Vec(modelFile, word):
     model = Word2Vec.load(modelFile)
-    test = np.array(model.wv.word_vec('men'))
-    test = np.append(test, 0.3)
-    print(test.shape)    
+    print(model.most_similar(word))    
 
 
 if __name__ == '__main__':
-    data = processEmolex()
-    print(data['whimper'])
+    createWord2Vec('model.bin', 'data.bin')
+    #process_word2Vec('model2.bin', 'anticipation')
 

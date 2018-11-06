@@ -15,6 +15,11 @@ def processAFIN():
             data[word][int(arr[1]) + 5] = 1
     return data
 
+def afin(data, word):
+    if word in data:
+        return data[word]
+    return np.zeros(11)
+
 
 def processEmojiValence():
     data = dict()
@@ -25,7 +30,12 @@ def processEmojiValence():
         data[word][json_elt['polarity'] + 4] = 1
     return data
 
-def preprocessDepechMode():
+def emojiValence(data, word):
+    if word in data:
+        return data[word]
+    return np.zeros(9)
+
+def processDepechMode():
     data = dict()
     f = open('../resources/depech_mood.txt', 'r')
     line = f.readline()
@@ -40,8 +50,10 @@ def preprocessDepechMode():
         data[word] = np.append(ones - tmp, np.array(arr[1:], dtype=np.float))
     return data
 
-def processDepechMode(data, word):
-    return data[word]
+def depechMood(data, word):
+    if word in data:
+        return data[word]
+    return np.zeros(12)
 
 def processEmojiSentimentLexicon(emoji):
     df = pd.read_csv('../resources/Emoji_Sentiment_Data_v1.0.csv')[['Emoji', 'Occurrences', 'Position', 'Negative', 'Neutral', 'Positive']]
@@ -70,6 +82,7 @@ def processOpinionLexiconEnglish(word):
         return np.array([0, 1])
     else:
         return np.zeros(2)
+
 def processEmolex():
     indexes = {'anger': 0,'anticipation':1, 'disgust':2, 'fear':3,'joy':4,'negative':5,'positive':6,'sadness':7,'surprise':8,'trust':9}
     data = dict()
@@ -98,19 +111,40 @@ def processEmolex():
     f.close()
     return data
 
+def emolex(data, word):
+    if word in data:
+        return data[word]
+    return np.zeros(9)
+
 def processSentiment140():
     df = pd.read_csv('../resources/unigrams-pmilexicon.txt', sep='\t', names=['word', 'sentimentScore', 'numPositive', 'numNegative'])
     df = df.dropna()
     print(df.info())
 
+def positiveExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex):
+    print(afin(dataAfin, 'abandon'))
+    print(emojiValence(dataEmoji, '😠'))
+    print(depechMood(dataDepechMood, 'absurdity'))
+    print(processEmojiSentimentLexicon('😉'))
+    print(emolex(dataEmolex, 'whimper'))
+
+def negativeExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex):
+    print(afin(dataAfin, 'abandonsqa'))
+    print(emojiValence(dataEmoji, 'iqf'))
+    print(depechMood(dataDepechMood, 'absurditysqdqsd'))
+    print(processEmojiSentimentLexicon('ia'))
+    print(emolex(dataEmolex, 'whimperisaa')) 
+
 def main():
     dataAfin = processAFIN()
-    print(dataAfin['abandon'])
     dataEmoji = processEmojiValence()
-    print(dataEmoji['😠'])
-    dataDepechMood = preprocessDepechMode()
-    print(dataDepechMood['absurdity'])
-    print(processEmojiSentimentLexicon('😉'))
+    dataDepechMood = processDepechMode()
     dataEmolex = processEmolex()
-    print(dataEmolex['whimper'])
+    print("### Positive Example ###")
+    positiveExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex)
+    print("\n### Negative Example ###")
+    negativeExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex)
+
+
+
 main()
