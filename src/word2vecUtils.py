@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
+import json
 
-def processAFIN(word):
+def processAFIN():
     data = dict()
     f = open('../resources/AFINN.txt', 'r')
     for line in f.readlines():
@@ -11,17 +12,17 @@ def processAFIN(word):
             continue
         else:
             data[word] = np.zeros(11)
-            data[word][arr[1] + 5] = 1
+            data[word][int(arr[1]) + 5] = 1
     return data
 
 
-def processEmojiValence(word):
+def processEmojiValence():
     data = dict()
     json_data = json.load(open('../resources/emoji_valence.json'))
     for json_elt in json_data:
-        if json_elt['emoji'] == word:
-            data[word] = np.zeros(7)
-            data[word][arr[1] + 5] = 1
+        word = json_elt['emoji']
+        data[word] = np.zeros(9)
+        data[word][json_elt['polarity'] + 4] = 1
     return data
 
 def preprocessDepechMode():
@@ -101,3 +102,15 @@ def processSentiment140():
     df = pd.read_csv('../resources/unigrams-pmilexicon.txt', sep='\t', names=['word', 'sentimentScore', 'numPositive', 'numNegative'])
     df = df.dropna()
     print(df.info())
+
+def main():
+    dataAfin = processAFIN()
+    print(dataAfin['abandon'])
+    dataEmoji = processEmojiValence()
+    print(dataEmoji['😠'])
+    dataDepechMood = preprocessDepechMode()
+    print(dataDepechMood['absurdity'])
+    print(processEmojiSentimentLexicon('😉'))
+    dataEmolex = processEmolex()
+    print(dataEmolex['whimper'])
+main()
