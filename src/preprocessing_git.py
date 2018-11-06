@@ -24,6 +24,22 @@ stopwords = set(stopwords.words('english')) - notstopwords
 lemmatizer = WordNetLemmatizer()
 T = tokenizer.TweetTokenizer(preserve_handles=False, preserve_hashes=False, preserve_case=False, preserve_url=False, regularize=True)
 
+def data_preprocessing(path_tweets):
+	tweets = pd.read_csv(path_tweets, encoding='utf-8',sep=',')
+	tweets['text'] = tweets['text'].apply(lambda x: standardization(x))
+	tweets['sentiment'] = tweets['airline_sentiment'].apply(lambda x:0 if x=='negative' else (1 if x=='neutral' else 2))
+	return tweets['text'], tweets['sentiment']
+
+
+
+def data_preprocessing (path_tweets,corpora):
+	data = pd.read_csv(path_tweets, encoding='utf-8',sep='\t', names=['id','class','text'])
+	if corpora=='train':
+		data['class'] = data['class'].apply(lambda x:0 if x=='negative' else (1 if x=='neutral' else 2 ))  # 0: 	negative, 1: neutral, 2: positive
+	data['text'] = data['text'].apply(lambda x: standardization(x))
+	return data['text'], data['class']
+
+
 def standardization(tweet):
     tweet = re.sub(r"\\u2019", "'",tweet)
     tweet = re.sub(r"\\u002c", "'",tweet)
