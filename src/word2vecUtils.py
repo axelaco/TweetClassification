@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import json
-
+import pickle
 def processAFIN():
     data = dict()
     f = open('../resources/AFINN.txt', 'r')
@@ -133,13 +133,25 @@ def negativeExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex):
     print(emojiValence(dataEmoji, 'iqf'))
     print(depechMood(dataDepechMood, 'absurditysqdqsd'))
     print(processEmojiSentimentLexicon('ia'))
-    print(emolex(dataEmolex, 'whimperisaa')) 
+    print(emolex(dataEmolex, 'whimperisaa'))
+
+
+def saveDict(data, path):
+    with open(path, 'wb') as fp:
+        pickle.dump(data, fp)
 
 def main():
     dataAfin = processAFIN()
     dataEmoji = processEmojiValence()
     dataDepechMood = processDepechMode()
     dataEmolex = processEmolex()
+
+    saveDict(dataAfin, '../resources/embeding/afin')
+    saveDict(dataDepechMood, '../resources/embeding/depech')
+    saveDict(dataEmoji, '../resources/embeding/EV')
+    saveDict(dataEmolex, '../resources/embeding/emolex')
+
+
     print("### Positive Example ###")
     positiveExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex)
     print("\n### Negative Example ###")

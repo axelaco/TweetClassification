@@ -3,15 +3,17 @@ import keras
 from preprocessing_git import data_preprocessing
 from gensim.models import KeyedVectors
 from keras.utils.np_utils import to_categorical
+from word2vecUtils import afin, emojiValence, depechMood, emolex
+import pickle
 
-# EMBEDDING_DIM = 339
+# EMBEDDING_DIM = 346
 #
 # corpora_train_3 = "../resources/data_train_3.csv"
 # corpora_train_7 = "../resources/data_train_7.csv"
 
 
 def getMaxLen(tweet3, tweet7):
-    sequences_train_3 = keras.tokenizer.texts_to_sequences(tweet3)
+    sequences_train_3 = keras.preprocessing.text.tokenizer.texts_to_sequences(tweet3)
     sequences_train_7 = keras.tokenizer.texts_to_sequences(tweet7)
     sequences = sequences_train_3 + sequences_train_7
 
@@ -29,15 +31,15 @@ def prepareData(corpora3, corpora7):
 
     all_tweet = tweet3.append(tweet7)
 
-    tokenizer = keras.Tokenizer(filters=' ')
+    tokenizer = keras.preprocessing.text.Tokenizer(filters=' ')
     tokenizer.fit_on_texts(all_tweet)
     word_index = tokenizer.word_index
 
     return word_index, tweet3, tweet7, sentiment3, sentiment7
 
 
-def getTrainAndTestData7(tweet7, sentiment7, maxLen):
-    sequences_train_7 = keras.tokenizer.texts_to_sequences(tweet7)
+def getTrainAndTestData7(tweet7, sentiment7, maxLen, tokenizer):
+    sequences_train_7 = tokenizer.texts_to_sequences(tweet7)
 
     data_train_7 = keras.preprocessing.sequence.pad_sequences(sequences_train_7, maxlen=maxLen)
     indices_train_7 = np.arange(data_train_7.shape[0])
@@ -53,8 +55,8 @@ def getTrainAndTestData7(tweet7, sentiment7, maxLen):
     return x_train_7, x_val_7,  y_train_7, y_val_7
 
 
-def getTrainAndTestData3(tweet3, sentiment3, maxLen):
-    sequences_train_3 = keras.tokenizer.texts_to_sequences(tweet3)
+def getTrainAndTestData3(tweet3, sentiment3, maxLen, tokenizer):
+    sequences_train_3 = tokenizer.texts_to_sequences(tweet3)
 
     data_train_3 = keras.preprocessing.sequence.pad_sequences(sequences_train_3, maxlen=maxLen)
     indices_train_3 = np.arange(data_train_3.shape[0])
@@ -69,6 +71,9 @@ def getTrainAndTestData3(tweet3, sentiment3, maxLen):
 
     return x_train_3, x_val_3, y_train_3, y_val_3
 
+def concatenateEmbeding(word, word2vec, afinn, EV, depech, emolex):
+    return word2vec.word_vec(word) + afin(afinn, word) + depechMood(depech, word) + emolex(emolex, word) + emojiValence(EV, word)
+
 
 def createEmbedingMatrix(word_index, w2vpath, dim):
     word2vec = KeyedVectors.load_word2vec_format(w2vpath, binary=True)
@@ -77,10 +82,20 @@ def createEmbedingMatrix(word_index, w2vpath, dim):
     oov.append((np.random.rand(dim) * 2.0) - 1.0)
     oov = oov / np.linalg.norm(oov)
 
+    afinn = pickle.load('afinn')
+    EV = pickle.load('emojiValence')
+    depech = pickle.load('depech')
+    emolex = pickle.load('emolex')
+
     for word, i in word_index.items():
         if word in word2vec.vocab:
-            embedding_matrix[i] = word2vec.word_vec(word)
+            embedding_matrix[i] = concatenateEmbeding(word, word2vec, afinn, EV, depech, emolex)
         else:
             embedding_matrix[i] = oov
 
     return embedding_matrix
+
+if __name__ == '__main__':
+    word_index , t3, t7, s3, s7 = prepareData('../resources/data_train_3.csv', '../resources/data_train_7.csv')
+    createEmbedingMatrix(word_index, '../resources/model2.bin', 346)
+
