@@ -4,7 +4,7 @@ from preprocessing_git import data_preprocessing
 from gensim.models import KeyedVectors
 from keras.utils.np_utils import to_categorical
 from word2vecUtils import afin, emojiValence, depechMood, emolex, \
-  emojiSentimentLexicon
+  emojiSentimentLexicon, opinionLexiconEnglish
 import pickle
 import sys
 from  gensim.models import Word2Vec
@@ -84,7 +84,7 @@ def getTrainAndTestData3(tweet3, sentiment3, maxLen, tokenizer):
     return x_train_3, x_val_3, y_train_3, y_val_3
 
 def concatenateEmbeding(word, word2vec, afinn_dict, \
-                        EV_dict, depech_dict, eml_dict, opi_dict):
+                        EV_dict, depech_dict, eml_dict, emo_dict, opi_dict):
    # processEmojiSentimentLexicon
   # processOpinionLexiconEnglish
 
@@ -93,10 +93,11 @@ def concatenateEmbeding(word, word2vec, afinn_dict, \
    a3 = depechMood(depech_dict, word)
    a4 = emolex(eml_dict, word)
    a5 = emojiValence(EV_dict, word)
-   a6 = emojiSentimentLexicon(opi_dict, word)
-   print(np.concatenate((a1,a2,a3,a4,a5,a6)).shape)
+   a6 = emojiSentimentLexicon(emo_dict, word)
+   a7 = opinionLexiconEnglish(opi_dict, word)
 
-   return np.concatenate((a1,a2,a3,a4,a5,a6))
+   # Shape (347,)
+   return np.concatenate((a1,a2,a3,a4,a5,a6,a7))
 
 def createEmbedingMatrix(word_index, w2vpath, dim):
     word2vec = loadKeyedVectors(w2vpath)
@@ -129,9 +130,10 @@ if __name__ == '__main__':
    EV = pickle.load(open(path + '/EV', 'rb'))
    depech = pickle.load(open(path + '/depech', 'rb'))
    eml = pickle.load(open(path + '/emolex', 'rb'))
-   opi = pickle.load(open(path + '/EmojiSentimentLexicon', 'rb'))
+   emo = pickle.load(open(path + '/EmojiSentimentLexicon', 'rb'))
+   opi = pickle.load(open(path + '/OpinionLexicon', 'rb'))
    word2vec = loadKeyedVectors('../resources/model2.kv')
-   concatenateEmbeding("sad", word2vec, afinn, EV, depech, eml, opi)
+   concatenateEmbeding("sad", word2vec, afinn, EV, depech, eml, emo, opi)
    sys.exit()
    word_index , t3, t7, s3, s7 = prepareData('../resources/data_train_3.csv', '../resources/data_train_7.csv')
    createEmbedingMatrix(word_index, '../resources/model2.kv', EMBEDDING_DIM)

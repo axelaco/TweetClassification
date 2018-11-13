@@ -156,14 +156,14 @@ def main():
     #dataEmoji = processEmojiValence()
     #dataDepechMood = processDepechMode()
     #dataEmolex = processEmolex()
-    dataSentimentLexicon = processEmojiSentimentLexicon()
+    #dataSentimentLexicon = processEmojiSentimentLexicon()
     dataOpinionLexicon = processOpinionLexiconEnglish()
 
     #saveDict(dataAfin, '../resources/embeding/afin')
     #saveDict(dataDepechMood, '../resources/embeding/depech')
     #saveDict(dataEmoji, '../resources/embeding/EV')
     #saveDict(dataEmolex, '../resources/embeding/emolex')
-    saveDict(dataSentimentLexicon, '../resources/embeding/EmojiSentimentLexicon')
+    #saveDict(dataSentimentLexicon, '../resources/embeding/EmojiSentimentLexicon')
     saveDict(dataOpinionLexicon, '../resources/embeding/OpinionLexicon')
 
 
