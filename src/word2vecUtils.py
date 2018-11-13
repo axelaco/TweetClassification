@@ -76,17 +76,23 @@ def emojiSentimentLexicon(data, word):
     return np.zeros(4)
 
 
-def processOpinionLexiconEnglish(word):
+def processOpinionLexiconEnglish():
     f_pos = open('../resources/opinion-positive-words.txt', 'r')
     f_neg = open('../resources/opinion-negative-words.txt', 'r')
     lines_pos = set(f_pos.read().splitlines())
     lines_neg = set(f_neg.read().splitlines())
-    if (word in lines_pos):
-        return np.array([1, 0])
-    elif (word in lines_neg):
-        return np.array([0, 1])
-    else:
-        return np.zeros(2)
+    data = dict()
+    for word in lines_pos:
+        data[word] = np.array([1, 0])
+    for word in lines_neg:
+        data[word] = np.array([0, 1])
+    return data
+
+def opinionLexiconEnglish(data, word):
+    if word in data:
+        return data[word]
+    return np.zeros(2)
+
 
 def processEmolex():
     indexes = {'anger': 0,'anticipation':1, 'disgust':2, 'fear':3,'joy':4,'negative':5,'positive':6,'sadness':7,'surprise':8,'trust':9}
@@ -151,12 +157,15 @@ def main():
     dataDepechMood = processDepechMode()
     dataEmolex = processEmolex()
     dataSentimentLexicon = processEmojiSentimentLexicon()
+    dataOpinionLexicon = processOpinionLexiconEnglish()
 
     saveDict(dataAfin, '../resources/embeding/afin')
     saveDict(dataDepechMood, '../resources/embeding/depech')
     saveDict(dataEmoji, '../resources/embeding/EV')
     saveDict(dataEmolex, '../resources/embeding/emolex')
     saveDict(dataSentimentLexicon, '../resources/embeding/EmojiSentimentLexicon')
+    saveDict(dataOpinionLexicon, '../resources/embeding/OpinionLexicon')
+
 
     print("### Positive Example ###")
     positiveExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex, dataSentimentLexicon)
