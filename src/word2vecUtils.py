@@ -152,26 +152,26 @@ def saveDict(data, path):
         pickle.dump(data, fp)
 
 def main():
-    dataAfin = processAFIN()
-    dataEmoji = processEmojiValence()
-    dataDepechMood = processDepechMode()
-    dataEmolex = processEmolex()
+    #dataAfin = processAFIN()
+    #dataEmoji = processEmojiValence()
+    #dataDepechMood = processDepechMode()
+    #dataEmolex = processEmolex()
     dataSentimentLexicon = processEmojiSentimentLexicon()
     dataOpinionLexicon = processOpinionLexiconEnglish()
 
-    saveDict(dataAfin, '../resources/embeding/afin')
-    saveDict(dataDepechMood, '../resources/embeding/depech')
-    saveDict(dataEmoji, '../resources/embeding/EV')
-    saveDict(dataEmolex, '../resources/embeding/emolex')
+    #saveDict(dataAfin, '../resources/embeding/afin')
+    #saveDict(dataDepechMood, '../resources/embeding/depech')
+    #saveDict(dataEmoji, '../resources/embeding/EV')
+    #saveDict(dataEmolex, '../resources/embeding/emolex')
     saveDict(dataSentimentLexicon, '../resources/embeding/EmojiSentimentLexicon')
     saveDict(dataOpinionLexicon, '../resources/embeding/OpinionLexicon')
 
 
-    print("### Positive Example ###")
-    positiveExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex, dataSentimentLexicon)
-    print("\n### Negative Example ###")
-    negativeExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex, dataSentimentLexicon)
-
-
+    #print("### Positive Example ###")
+    #positiveExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex, dataSentimentLexicon)
+    #print("\n### Negative Example ###")
+    #negativeExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex, dataSentimentLexicon)
+#
+#
 
 main()
