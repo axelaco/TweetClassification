@@ -3,13 +3,20 @@ import keras
 from preprocessing_git import data_preprocessing
 from gensim.models import KeyedVectors
 from keras.utils.np_utils import to_categorical
-from word2vecUtils import afin, emojiValence, depechMood, emolex, \
-  emojiSentimentLexicon, opinionLexiconEnglish
 import pickle
 import sys
 from  gensim.models import Word2Vec
+import word2vecUtils
 
-EMBEDDING_DIM = 346
+# DEBUG purpose
+#import importlib
+#importlib.reload(word2vecUtils)
+from word2vecUtils import afin, emojiValence, depechMood, emolex, \
+  emojiSentimentLexicon, opinionLexiconEnglish
+
+
+
+EMBEDDING_DIM = 348
 #
 # corpora_train_3 = "../resources/data_train_3.csv"
 # corpora_train_7 = "../resources/data_train_7.csv"
@@ -83,21 +90,14 @@ def getTrainAndTestData3(tweet3, sentiment3, maxLen, tokenizer):
 
     return x_train_3, x_val_3, y_train_3, y_val_3
 
-def concatenateEmbeding(word, word2vec, afinn_dict, \
-                        EV_dict, depech_dict, eml_dict, emo_dict, opi_dict):
-   # processEmojiSentimentLexicon
-  # processOpinionLexiconEnglish
 
-   a1 = word2vec.word_vec(word)
-   a2 = afin(afinn_dict, word)
-   a3 = depechMood(depech_dict, word)
-   a4 = emolex(eml_dict, word)
-   a5 = emojiValence(EV_dict, word)
-   a6 = emojiSentimentLexicon(emo_dict, word)
-   a7 = opinionLexiconEnglish(opi_dict, word)
+def concatenateEmbeding(word, word2vec, wv_sentiment_dict):
+  concat = [word2vec.word_vec(word)]
+  for keys in wv_sentiment_dict:
+    dictionary, fct  = wv_sentiment_dict[keys]
+    concat.append(fct(dictionary, word))
 
-   # Shape (347,)
-   return np.concatenate((a1,a2,a3,a4,a5,a6,a7))
+  return np.concatenate(concat)
 
 def createEmbedingMatrix(word_index, w2vpath, dim):
     word2vec = loadKeyedVectors(w2vpath)
@@ -110,30 +110,26 @@ def createEmbedingMatrix(word_index, w2vpath, dim):
 
 
     # Load sentiment vectors
-    afinn = pickle.load(open(path + '/afin', 'rb'))
-    EV = pickle.load(open(path + '/EV', 'rb'))
-    depech = pickle.load(open(path + '/depech', 'rb'))
-    emolex = pickle.load(open(path + '/emolex', 'rb'))
+    sentiment_wv_dict = {
+      'afin': [pickle.load(open(path + '/afin', 'rb')), afin],
+      'ev': [pickle.load(open(path + '/EV', 'rb')), emojiValence],
+      'depech': [pickle.load(open(path + '/depech', 'rb')), depechMood],
+      'emolex': [pickle.load(open(path + '/emolex', 'rb')), emolex],
+      'emoji': [pickle.load(open(path + '/EmojiSentimentLexicon', 'rb')),emojiSentimentLexicon],
+      'opinion': [pickle.load(open(path + '/OpinionLexicon',
+      'rb')),opinionLexiconEnglish]
+    }
+
 
     for word, i in word_index.items():
         if word in word2vec.vocab:
-            embedding_matrix[i] = concatenateEmbeding(word, word2vec, afinn, EV, depech, emolex)
+            embedding_matrix[i] = concatenateEmbeding(word, word2vec, sentiment_wv_dict)
         else:
             embedding_matrix[i] = oov
 
     return embedding_matrix
 
 if __name__ == '__main__':
-
-   path = "../resources/embeding"
-   afinn = pickle.load(open(path + '/afin', 'rb'))
-   EV = pickle.load(open(path + '/EV', 'rb'))
-   depech = pickle.load(open(path + '/depech', 'rb'))
-   eml = pickle.load(open(path + '/emolex', 'rb'))
-   emo = pickle.load(open(path + '/EmojiSentimentLexicon', 'rb'))
-   opi = pickle.load(open(path + '/OpinionLexicon', 'rb'))
-   word2vec = loadKeyedVectors('../resources/model2.kv')
-   concatenateEmbeding("sad", word2vec, afinn, EV, depech, eml, emo, opi)
-   sys.exit()
    word_index , t3, t7, s3, s7 = prepareData('../resources/data_train_3.csv', '../resources/data_train_7.csv')
+  # createEmbedingMatrix({'notabene': 1}, '../resources/model2.kv', EMBEDDING_DIM)
    createEmbedingMatrix(word_index, '../resources/model2.kv', EMBEDDING_DIM)

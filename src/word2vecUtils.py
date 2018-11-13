@@ -117,7 +117,7 @@ def processEmolex():
             if word in data:
                 data[word][indexes[arr[2]]] = arr[1]
             else:
-                data[word] = np.zeros(9)
+                data[word] = np.zeros(10)
                 data[word][indexes[arr[2]]] = arr[1]
     f.close()
     return data
@@ -125,7 +125,7 @@ def processEmolex():
 def emolex(data, word):
     if word in data:
         return data[word]
-    return np.zeros(9)
+    return np.zeros(10)
 
 def processSentiment140():
     df = pd.read_csv('../resources/unigrams-pmilexicon.txt', sep='\t', names=['word', 'sentimentScore', 'numPositive', 'numNegative'])
@@ -155,16 +155,16 @@ def main():
     #dataAfin = processAFIN()
     #dataEmoji = processEmojiValence()
     #dataDepechMood = processDepechMode()
-    #dataEmolex = processEmolex()
+    dataEmolex = processEmolex()
     #dataSentimentLexicon = processEmojiSentimentLexicon()
-    dataOpinionLexicon = processOpinionLexiconEnglish()
+    #dataOpinionLexicon = processOpinionLexiconEnglish()
 
     #saveDict(dataAfin, '../resources/embeding/afin')
     #saveDict(dataDepechMood, '../resources/embeding/depech')
     #saveDict(dataEmoji, '../resources/embeding/EV')
-    #saveDict(dataEmolex, '../resources/embeding/emolex')
+    saveDict(dataEmolex, '../resources/embeding/emolex')
     #saveDict(dataSentimentLexicon, '../resources/embeding/EmojiSentimentLexicon')
-    saveDict(dataOpinionLexicon, '../resources/embeding/OpinionLexicon')
+    #saveDict(dataOpinionLexicon, '../resources/embeding/OpinionLexicon')
 
 
     #print("### Positive Example ###")
