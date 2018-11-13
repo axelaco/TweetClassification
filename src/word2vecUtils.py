@@ -56,21 +56,25 @@ def depechMood(data, word):
         return data[word]
     return np.zeros(12)
 
-def processEmojiSentimentLexicon(emoji):
-    df = pd.read_csv('../resources/Emoji_Sentiment_Data_v1.0.csv')[['Emoji', 'Occurrences', 'Position', 'Negative', 'Neutral', 'Positive']]
-    df.Occurrences = df.Occurrences.apply(lambda x: float(x))
-    df.Negative = df.Negative.apply(lambda x: float(x))
-    df.Neutral = df.Neutral.apply(lambda x: float(x))
-    df.Positive = df.Positive.apply(lambda x: float(x))
-    
-    df.Negative = df.Negative / df.Occurrences
-    df.Neutral = df.Neutral / df.Occurrences
-    df.Positive = df.Positive / df.Occurrences
-    elt = df[df['Emoji'] == emoji][['Position', 'Negative', 'Neutral', 'Positive']]
-    if len(elt) > 0:
-        return elt.values[0]
-    else:
-        return np.zeros(4)
+def processEmojiSentimentLexicon():
+    f = open('../resources/Emoji_Sentiment_Data_v1.0.csv', 'r')
+    f.readline()
+    data = dict()
+    for line in f.readlines():
+        arr = line.strip().split(',')
+        emoji = arr[0]
+        data[emoji] = np.zeros(4)
+        data[emoji][0] = arr[3]
+        data[emoji][1] = float(arr[4]) / float(arr[2])
+        data[emoji][2] = float(arr[5]) / float(arr[2])
+        data[emoji][3] = float(arr[6]) / float(arr[2])
+    return data
+
+def emojiSentimentLexicon(data, word):
+    if word in data:
+        return data[word]
+    return np.zeros(4)
+
 
 def processOpinionLexiconEnglish(word):
     f_pos = open('../resources/opinion-positive-words.txt', 'r')
@@ -122,18 +126,18 @@ def processSentiment140():
     df = df.dropna()
     print(df.info())
 
-def positiveExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex):
+def positiveExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex, dataSentimentLexicon):
     print(afin(dataAfin, 'abandon'))
     print(emojiValence(dataEmoji, '😠'))
     print(depechMood(dataDepechMood, 'absurdity'))
-    print(processEmojiSentimentLexicon('😉'))
+    print(emojiSentimentLexicon(dataSentimentLexicon, '😉'))
     print(emolex(dataEmolex, 'whimper'))
 
-def negativeExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex):
+def negativeExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex, dataSentimentLexicon):
     print(afin(dataAfin, 'abandonsqa'))
     print(emojiValence(dataEmoji, 'iqf'))
     print(depechMood(dataDepechMood, 'absurditysqdqsd'))
-    print(processEmojiSentimentLexicon('ia'))
+    print(emojiSentimentLexicon(dataSentimentLexicon, 'ia'))
     print(emolex(dataEmolex, 'whimperisaa'))
 
 
@@ -146,18 +150,19 @@ def main():
     dataEmoji = processEmojiValence()
     dataDepechMood = processDepechMode()
     dataEmolex = processEmolex()
+    dataSentimentLexicon = processEmojiSentimentLexicon()
 
     saveDict(dataAfin, '../resources/embeding/afin')
     saveDict(dataDepechMood, '../resources/embeding/depech')
     saveDict(dataEmoji, '../resources/embeding/EV')
     saveDict(dataEmolex, '../resources/embeding/emolex')
-
+    saveDict(dataSentimentLexicon, '../resources/embeding/EmojiSentimentLexicon')
 
     print("### Positive Example ###")
-    positiveExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex)
+    positiveExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex, dataSentimentLexicon)
     print("\n### Negative Example ###")
-    negativeExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex)
+    negativeExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex, dataSentimentLexicon)
 
 
 
-# main()
+main()

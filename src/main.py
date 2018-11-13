@@ -23,12 +23,13 @@ def emoji_valence(word2vec):
     return
 
 
-def prepareDataset(modelFile):
+def prepareDataset():
     data = []
     dir_file = '../tweet_data'
     files = os.listdir(dir_file)
-    files = files[:5]
+    files = files[:10]
     for i in range(len(files)):
+        view_bar(i, len(files))
         with open(os.path.join(dir_file, files[i])) as f:
             lines = f.readlines()
             idx = 0
@@ -38,7 +39,7 @@ def prepareDataset(modelFile):
                 idx += 1
             print('\n')
 
-    with open('data.bin', 'wb') as fp:
+    with open('data_5M.bin', 'wb') as fp:
        pickle.dump(data, fp)
 
 def smallDataset():
@@ -65,12 +66,15 @@ def createWord2Vec(modelFile, dataset):
     # save model
     model.save(modelFile)
     
-def process_word2Vec(modelFile, word):
+def process_word2Vec(modelFile, words):
     model = Word2Vec.load(modelFile)
-    print(model.most_similar(word))    
+    for word in words:
+        print(word)
+        print(model.most_similar(word))    
 
 
 if __name__ == '__main__':
-    createWord2Vec('model.bin', 'data.bin')
-    #process_word2Vec('model2.bin', 'anticipation')
+    #createWord2Vec('model_5M.bin', 'data_5M.bin')
+    #createWord2Vec('model.bin', 'data.bin')
+    process_word2Vec('model_5M.bin', ['joy', 'angry', 'embarassed', 'love', 'starving', 'sleep'])
 
