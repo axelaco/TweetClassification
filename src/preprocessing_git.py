@@ -17,7 +17,6 @@ from nltk.corpus import stopwords
 import pandas as pd
 import nltk
 
-
 notstopwords = set(('not', 'no', 'mustn', "mustn\'t"))
 stopwords = set(stopwords.words('english')) - notstopwords
 
@@ -46,7 +45,7 @@ def standardization(tweet):
     tweet = re.sub(r" [0-9]+ "," ",tweet)
     tweets = T.tokenize(tweet)
     tweets = emoji.str2emoji(tweets)
-    tweets = [lemmatizer.lemmatize(i,j[0].lower()) if j[0].lower() in ['a','n','v']  else lemmatizer.lemmatize(i) for i,j in pos_tag(tweets)]
+    tweets = [lemmatizer.lemmatize(word,grammar[0].lower()) if grammar[0].lower() in ['a','n','v']  else lemmatizer.lemmatize(word) for word,grammar in pos_tag(tweets)]
     tweets = [tweet for tweet in tweets if (tweet not in punctuation) and (tweet not in stopwords)]
     tweets = list(filter(lambda x: x.count('.') < 4, tweets))
     tweet = ' '.join(tweets)
@@ -59,7 +58,7 @@ def standardization2(tweet):
     tweet = re.sub(r"RT ", "", tweet)
     tweets = T.tokenize(tweet)
     tweets = emoji.str2emoji(tweets)
-    tweets = [lemmatizer.lemmatize(i,j[0].lower()) if j[0].lower() in ['a','n','v']  else lemmatizer.lemmatize(i) for i,j in pos_tag(tweets)]
+    tweets = [lemmatizer.lemmatize(word,grammar[0].lower()) if grammar[0].lower() in ['a','n','v']  else lemmatizer.lemmatize(word) for word,grammar in pos_tag(tweets)]
     tweets = [tweet for tweet in tweets if (tweet not in punctuation) and (tweet not in stopwords)]
     tweets = list(filter(lambda x: x.count('.') < 4, tweets))
     return tweets

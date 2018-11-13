@@ -1,0 +1,7 @@
+numpy
+keras
+gensim
+tensorflow
+pandas
+nltk
+git+https://github.com/erikavaris/tokenizer.git

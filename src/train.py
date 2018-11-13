@@ -5,8 +5,9 @@ from gensim.models import KeyedVectors
 from keras.utils.np_utils import to_categorical
 from word2vecUtils import afin, emojiValence, depechMood, emolex
 import pickle
+import sys
 
-# EMBEDDING_DIM = 346
+EMBEDDING_DIM = 346
 #
 # corpora_train_3 = "../resources/data_train_3.csv"
 # corpora_train_7 = "../resources/data_train_7.csv"
@@ -97,5 +98,5 @@ def createEmbedingMatrix(word_index, w2vpath, dim):
 
 if __name__ == '__main__':
     word_index , t3, t7, s3, s7 = prepareData('../resources/data_train_3.csv', '../resources/data_train_7.csv')
-    createEmbedingMatrix(word_index, '../resources/model2.bin', 346)
+    createEmbedingMatrix(word_index, '../resources/model2.bin', EMBEDDING_DIM)
 

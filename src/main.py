@@ -10,6 +10,8 @@ from tensorflow import keras
 import emoji
 import preprocessing_git
 from gensim.models import Word2Vec, KeyedVectors
+
+
 def view_bar(num, total):
     rate = float(num) / total
     rate_num = int(rate * 100) + 1
