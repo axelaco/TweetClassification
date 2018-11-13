@@ -6,11 +6,21 @@ from keras.utils.np_utils import to_categorical
 from word2vecUtils import afin, emojiValence, depechMood, emolex
 import pickle
 import sys
+from  gensim.models import Word2Vec
 
 EMBEDDING_DIM = 346
 #
 # corpora_train_3 = "../resources/data_train_3.csv"
 # corpora_train_7 = "../resources/data_train_7.csv"
+
+
+# Word2Vec to KeyedVectors 
+def saveKeyedVectors(path, model):
+   model_vectors = model.wv 
+   model_vectors.save(path)
+
+def loadKeyedVectors(path):
+   return KeyedVectors.load(path, mmap='r')
 
 
 def getMaxLen(tweet3, tweet7):
@@ -72,21 +82,33 @@ def getTrainAndTestData3(tweet3, sentiment3, maxLen, tokenizer):
 
     return x_train_3, x_val_3, y_train_3, y_val_3
 
-def concatenateEmbeding(word, word2vec, afinn, EV, depech, emolex):
-    return word2vec.word_vec(word) + afin(afinn, word) + depechMood(depech, word) + emolex(emolex, word) + emojiValence(EV, word)
+def concatenateEmbeding(word, word2vec, afinn_dict, EV_dict, depech_dict, eml_dict):
+   # processEmojiSentimentLexicon
+  # processOpinionLexiconEnglish
+
+   a1 = word2vec.word_vec(word)
+   a2 = afin(afinn_dict, word)
+   a3 = depechMood(depech_dict, word)
+   a4 = emolex(eml_dict, word)
+   a5 = emojiValence(EV_dict, word)
+   return np.concatenate((a1,a2,a3,a4,a5))
 
 
 def createEmbedingMatrix(word_index, w2vpath, dim):
-    word2vec = KeyedVectors.load_word2vec_format(w2vpath, binary=True)
+    word2vec = loadKeyedVectors(w2vpath)
     embedding_matrix = np.zeros((len(word_index) + 1, dim))
     oov = []
     oov.append((np.random.rand(dim) * 2.0) - 1.0)
     oov = oov / np.linalg.norm(oov)
 
-    afinn = pickle.load('afinn')
-    EV = pickle.load('emojiValence')
-    depech = pickle.load('depech')
-    emolex = pickle.load('emolex')
+    path = "../resources/embeding"
+
+
+    # Load sentiment vectors
+    afinn = pickle.load(open(path + '/afin', 'rb'))
+    EV = pickle.load(open(path + '/EV', 'rb'))
+    depech = pickle.load(open(path + '/depech', 'rb'))
+    emolex = pickle.load(open(path + '/emolex', 'rb'))
 
     for word, i in word_index.items():
         if word in word2vec.vocab:
@@ -97,6 +119,14 @@ def createEmbedingMatrix(word_index, w2vpath, dim):
     return embedding_matrix
 
 if __name__ == '__main__':
-    word_index , t3, t7, s3, s7 = prepareData('../resources/data_train_3.csv', '../resources/data_train_7.csv')
-    createEmbedingMatrix(word_index, '../resources/model2.bin', EMBEDDING_DIM)
 
+   #path = "../resources/embeding"
+   #afinn = pickle.load(open(path + '/afin', 'rb'))
+   #EV = pickle.load(open(path + '/EV', 'rb'))
+   #depech = pickle.load(open(path + '/depech', 'rb'))
+   #eml = pickle.load(open(path + '/emolex', 'rb'))
+   #word2vec = loadKeyedVectors('../resources/model2.kv')
+   #concatenateEmbeding("sad", word2vec, afinn, EV, depech, eml)
+   #sys.exit()
+   word_index , t3, t7, s3, s7 = prepareData('../resources/data_train_3.csv', '../resources/data_train_7.csv')
+   createEmbedingMatrix(word_index, '../resources/model2.kv', EMBEDDING_DIM)

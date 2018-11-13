@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import json
 import pickle
+
 def processAFIN():
     data = dict()
     f = open('../resources/AFINN.txt', 'r')
