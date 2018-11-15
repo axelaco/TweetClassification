@@ -137,7 +137,7 @@ if __name__ == '__main__':
   #saveKeyedVectors('../resources/model2.kv', model)
   
 
-  MAX_SEQUENCE_LENGTH = get_max_len(tweet3, tweet7, tokenizer)
+  MAX_SEQUENCE_LENGTH = get_max_len([tweet3, tweet7], tokenizer)
 
   embedding_matrix = createEmbedingMatrix(word_index, '../resources/model2.kv', EMBEDDING_DIM)
 
