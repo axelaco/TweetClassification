@@ -36,18 +36,10 @@ def loadKeyedVectors(path):
    return KeyedVectors.load(path, mmap='r')
 
 
-def getMaxLen(tweet3, tweet7, tokenizer):
-    sequences_train_3 = tokenizer.texts_to_sequences(tweet3)
-    sequences_train_7 = tokenizer.texts_to_sequences(tweet7)
-    sequences = sequences_train_3 + sequences_train_7
 
-    maxlen = 0
-    for elt in sequences:
-        if len(elt) > maxlen:
-            maxlen = len(elt)
-
-    return maxlen
-
+def get_max_len(tweets, tokenizer):
+  tweets = [max(tokenizer.texts_to_sequences(tweet), key=len) for tweet in tweets]
+  return max(tweets, key=len)
 
 def prepareData(corpora3, corpora7):
     tweet3, sentiment3 = data_preprocessing(corpora3, 'train')
@@ -61,39 +53,22 @@ def prepareData(corpora3, corpora7):
 
     return word_index, tokenizer, tweet3, tweet7, sentiment3, sentiment7
 
+def get_train_test(tweet, sentiment, max_len, tokenizer):
+    sequences_train = tokenizer.texts_to_sequences(tweet)
 
-def getTrainAndTestData7(tweet7, sentiment7, maxLen, tokenizer):
-    sequences_train_7 = tokenizer.texts_to_sequences(tweet7)
+    data_train = keras.preprocessing.sequence.pad_sequences(sequences_train, maxlen=max_len)
+    indices_train = np.arange(data_train.shape[0])
+    data_train = data_train[indices_train]
 
-    data_train_7 = keras.preprocessing.sequence.pad_sequences(sequences_train_7, maxlen=maxLen)
-    indices_train_7 = np.arange(data_train_7.shape[0])
-    data_train_7 = data_train_7[indices_train_7]
+    labels_train = to_categorical(np.asarray(sentiment), 3)
+    labels_train = labels_train[indices_train]
 
-    labels_train_7 = to_categorical(np.asarray(sentiment7), 3)
-    labels_train_7 = labels_train_7[indices_train_7]
+    split_idx = int(len(data_train) * 0.70)
+    x_train, x_val = data_train[:split_idx], data_train[split_idx:]
+    y_train, y_val = labels_train[:split_idx], labels_train[split_idx:]
 
-    split_idx = int(len(data_train_7) * 0.70)
-    x_train_7, x_val_7 = data_train_7[:split_idx], data_train_7[split_idx:]
-    y_train_7, y_val_7 = labels_train_7[:split_idx], labels_train_7[split_idx:]
+    return x_train, x_val, y_train, y_val
 
-    return x_train_7, x_val_7,  y_train_7, y_val_7
-
-
-def getTrainAndTestData3(tweet3, sentiment3, maxLen, tokenizer):
-    sequences_train_3 = tokenizer.texts_to_sequences(tweet3)
-
-    data_train_3 = keras.preprocessing.sequence.pad_sequences(sequences_train_3, maxlen=maxLen)
-    indices_train_3 = np.arange(data_train_3.shape[0])
-    data_train_3 = data_train_3[indices_train_3]
-
-    labels_train_3 = to_categorical(np.asarray(sentiment3), 3)
-    labels_train_3 = labels_train_3[indices_train_3]
-
-    split_idx = int(len(data_train_3) * 0.70)
-    x_train_3, x_val_3 = data_train_3[:split_idx], data_train_3[split_idx:]
-    y_train_3, y_val_3 = labels_train_3[:split_idx], labels_train_3[split_idx:]
-
-    return x_train_3, x_val_3, y_train_3, y_val_3
 
 
 def concatenateEmbeding(word, word2vec, wv_sentiment_dict):
@@ -163,11 +138,11 @@ if __name__ == '__main__':
   #saveKeyedVectors('../resources/model2.kv', model)
   
 
-  MAX_SEQUENCE_LENGTH = getMaxLen(corpora_train_3, corpora_train_7, tokenizer)
+  MAX_SEQUENCE_LENGTH = get_max_len(corpora_train_3, corpora_train_7, tokenizer)
 
   embedding_matrix = createEmbedingMatrix(word_index, '../resources/model2.kv', EMBEDDING_DIM)
 
-  x_train_3, x_val_3, y_train_3, y_val_3 = getTrainAndTestData3(tweet3, sentiment3, MAX_SEQUENCE_LENGTH, tokenizer)
+  x_train_3, x_val_3, y_train_3, y_val_3 = get_train_test(tweet3, sentiment3, MAX_SEQUENCE_LENGTH, tokenizer)
   embedding_layer = Embedding(len(word_index) + 1,
                           EMBEDDING_DIM,
                           weights=[embedding_matrix],
