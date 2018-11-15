@@ -7,7 +7,12 @@ import pickle
 import sys
 from  gensim.models import Word2Vec
 import word2vecUtils
-
+from keras.layers.embeddings import Embedding
+from keras.models import Sequential, Model
+from keras.layers import LSTM, Dropout, Dense, Bidirectional,  Flatten, Input, GRU, GaussianNoise
+from keras import regularizers
+import matplotlib as mpl
+from keras.optimizers import Adam
 # DEBUG purpose
 #import importlib
 #importlib.reload(word2vecUtils)
@@ -31,9 +36,9 @@ def loadKeyedVectors(path):
    return KeyedVectors.load(path, mmap='r')
 
 
-def getMaxLen(tweet3, tweet7):
-    sequences_train_3 = keras.preprocessing.text.tokenizer.texts_to_sequences(tweet3)
-    sequences_train_7 = keras.tokenizer.texts_to_sequences(tweet7)
+def getMaxLen(tweet3, tweet7, tokenizer):
+    sequences_train_3 = tokenizer.texts_to_sequences(tweet3)
+    sequences_train_7 = tokenizer.texts_to_sequences(tweet7)
     sequences = sequences_train_3 + sequences_train_7
 
     maxlen = 0
@@ -54,7 +59,7 @@ def prepareData(corpora3, corpora7):
     tokenizer.fit_on_texts(all_tweet)
     word_index = tokenizer.word_index
 
-    return word_index, tweet3, tweet7, sentiment3, sentiment7
+    return word_index, tokenizer, tweet3, tweet7, sentiment3, sentiment7
 
 
 def getTrainAndTestData7(tweet7, sentiment7, maxLen, tokenizer):
@@ -129,7 +134,44 @@ def createEmbedingMatrix(word_index, w2vpath, dim):
 
     return embedding_matrix
 
+def model1(x_train_3, y_train_3,x_val_3, y_val_3, embedding_layer):
+  model1 = Sequential()
+  model1.add(embedding_layer)
+  model1.add(GaussianNoise(0.2))
+  model1.add(Dropout(0.3))
+  model1.add(Bidirectional(LSTM(150, recurrent_dropout=0.25, return_sequences=True)))
+  model1.add(Bidirectional(LSTM(150, recurrent_dropout=0.25)))
+  model1.add(Dropout(0.5))
+  model1.add(Dense(3, activation='softmax', kernel_regularizer=regularizers.l2(0.0001)))
+  model1.compile(loss='categorical_crossentropy',
+			      optimizer=Adam(lr=0.01),
+			      metrics=['acc'])
+  model1.summary()
+  history=model1.fit(x_train_3, y_train_3, validation_data=(x_val_3, y_val_3),epochs=6, batch_size=64)
+  model1.save("./model1.h5")
+
+
+
 if __name__ == '__main__':
-   word_index , t3, t7, s3, s7 = prepareData('../resources/data_train_3.csv', '../resources/data_train_7.csv')
-  # createEmbedingMatrix({'notabene': 1}, '../resources/model2.kv', EMBEDDING_DIM)
-   createEmbedingMatrix(word_index, '../resources/model2.kv', EMBEDDING_DIM)
+  corpora_train_3 = '../resources/data_train_3.csv'
+  corpora_train_7 = '../resources/data_train_7.csv'
+  corpora_test_7 = "'../resources/data_test_7.csv'"
+
+
+  word_index, tokenizer, tweet3, tweet7, sentiment3, sentiment7 = prepareData(corpora_train_3, corpora_train_7)
+  #model = Word2Vec.load('../resources/model_5M.bin')
+  #saveKeyedVectors('../resources/model2.kv', model)
+  
+
+  MAX_SEQUENCE_LENGTH = getMaxLen(corpora_train_3, corpora_train_7, tokenizer)
+
+  embedding_matrix = createEmbedingMatrix(word_index, '../resources/model2.kv', EMBEDDING_DIM)
+
+  x_train_3, x_val_3, y_train_3, y_val_3 = getTrainAndTestData3(tweet3, sentiment3, MAX_SEQUENCE_LENGTH, tokenizer)
+  embedding_layer = Embedding(len(word_index) + 1,
+                          EMBEDDING_DIM,
+                          weights=[embedding_matrix],
+                          input_length=MAX_SEQUENCE_LENGTH,
+                          trainable=False, name='embedding_layer')
+
+  model1(x_train_3, y_train_3,x_val_3, y_val_3, embedding_layer)

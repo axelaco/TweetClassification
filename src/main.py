@@ -72,9 +72,10 @@ def process_word2Vec(modelFile, words):
         print(word)
         print(model.most_similar(word))    
 
-
+"""
 if __name__ == '__main__':
     #createWord2Vec('model_5M.bin', 'data_5M.bin')
     #createWord2Vec('model.bin', 'data.bin')
     process_word2Vec('model_5M.bin', ['joy', 'angry', 'embarassed', 'love', 'starving', 'sleep'])
 
+"""
