@@ -38,8 +38,7 @@ def loadKeyedVectors(path):
 
 
 def get_max_len(tweets, tokenizer):
-  tweets = [max(tokenizer.texts_to_sequences(tweet), key=len) for tweet in tweets]
-  return max(tweets, key=len)
+  return len(max([max(tokenizer.texts_to_sequences(tweet), key=len) for tweet in tweets], key=len))
 
 def prepareData(corpora3, corpora7):
     tweet3, sentiment3 = data_preprocessing(corpora3, 'train')
@@ -138,7 +137,7 @@ if __name__ == '__main__':
   #saveKeyedVectors('../resources/model2.kv', model)
   
 
-  MAX_SEQUENCE_LENGTH = get_max_len(corpora_train_3, corpora_train_7, tokenizer)
+  MAX_SEQUENCE_LENGTH = get_max_len(tweet3, tweet7, tokenizer)
 
   embedding_matrix = createEmbedingMatrix(word_index, '../resources/model2.kv', EMBEDDING_DIM)
 
