@@ -20,7 +20,7 @@ from word2vecUtils import afin, emojiValence, depechMood, emolex, \
   emojiSentimentLexicon, opinionLexiconEnglish
 
 
-
+word2vec_tweet = pickle.load(open('../resources/datastories.twitter.300d.pickle', 'rb'))
 EMBEDDING_DIM = 348
 #
 # corpora_train_3 = "../resources/data_train_3.csv"
@@ -70,8 +70,8 @@ def get_train_test(tweet, sentiment, max_len, tokenizer):
 
 
 
-def concatenateEmbeding(word, word2vec, wv_sentiment_dict):
-  concat = [word2vec.word_vec(word)]
+def concatenateEmbeding(word, wv_sentiment_dict):
+  concat = [word2vec_tweet[word]]
   for keys in wv_sentiment_dict:
     dictionary, fct  = wv_sentiment_dict[keys]
     concat.append(fct(dictionary, word))
@@ -79,7 +79,7 @@ def concatenateEmbeding(word, word2vec, wv_sentiment_dict):
   return np.concatenate(concat)
 
 def createEmbedingMatrix(word_index, w2vpath, dim):
-    word2vec = loadKeyedVectors(w2vpath)
+    #word2vec = loadKeyedVectors(w2vpath)
     embedding_matrix = np.zeros((len(word_index) + 1, dim))
     oov = []
     oov.append((np.random.rand(dim) * 2.0) - 1.0)
@@ -101,8 +101,8 @@ def createEmbedingMatrix(word_index, w2vpath, dim):
 
 
     for word, i in word_index.items():
-        if word in word2vec.vocab:
-            embedding_matrix[i] = concatenateEmbeding(word, word2vec, sentiment_wv_dict)
+        if word in word2vec_tweet:
+            embedding_matrix[i] = concatenateEmbeding(word, sentiment_wv_dict)
         else:
             embedding_matrix[i] = oov
 
@@ -114,14 +114,16 @@ def model1(x_train_3, y_train_3,x_val_3, y_val_3, embedding_layer):
   model1.add(GaussianNoise(0.2))
   model1.add(Dropout(0.3))
   model1.add(Bidirectional(LSTM(150, recurrent_dropout=0.25, return_sequences=True)))
+  model1.add(Dropout(0.5))
   model1.add(Bidirectional(LSTM(150, recurrent_dropout=0.25)))
   model1.add(Dropout(0.5))
-  model1.add(Dense(3, activation='softmax', kernel_regularizer=regularizers.l2(0.0001)))
+  model1.add(Dense(3, activation='softmax',kernel_regularizer=regularizers.l2(0.0001),
+                activity_regularizer=regularizers.l2(0.0001)))
   model1.compile(loss='categorical_crossentropy',
 			      optimizer=Adam(lr=0.01),
 			      metrics=['acc'])
   model1.summary()
-  history=model1.fit(x_train_3, y_train_3, validation_data=(x_val_3, y_val_3),epochs=6, batch_size=64)
+  history=model1.fit(x_train_3, y_train_3, validation_data=(x_val_3, y_val_3),epochs=6, batch_size=128)
   model1.save("./model1.h5")
 
 
@@ -136,7 +138,6 @@ if __name__ == '__main__':
   #model = Word2Vec.load('../resources/model_5M.bin')
   #saveKeyedVectors('../resources/model2.kv', model)
   
-
   MAX_SEQUENCE_LENGTH = get_max_len([tweet3, tweet7], tokenizer)
 
   embedding_matrix = createEmbedingMatrix(word_index, '../resources/model2.kv', EMBEDDING_DIM)
