@@ -152,19 +152,19 @@ def saveDict(data, path):
         pickle.dump(data, fp)
 
 def main():
-    #dataAfin = processAFIN()
-    #dataEmoji = processEmojiValence()
-    #dataDepechMood = processDepechMode()
+    dataAfin = processAFIN()
+    dataEmoji = processEmojiValence()
+    dataDepechMood = processDepechMode()
     dataEmolex = processEmolex()
-    #dataSentimentLexicon = processEmojiSentimentLexicon()
-    #dataOpinionLexicon = processOpinionLexiconEnglish()
+    dataSentimentLexicon = processEmojiSentimentLexicon()
+    dataOpinionLexicon = processOpinionLexiconEnglish()
 
-    #saveDict(dataAfin, '../resources/embeding/afin')
-    #saveDict(dataDepechMood, '../resources/embeding/depech')
-    #saveDict(dataEmoji, '../resources/embeding/EV')
+    saveDict(dataAfin, '../resources/embeding/afin')
+    saveDict(dataDepechMood, '../resources/embeding/depech')
+    saveDict(dataEmoji, '../resources/embeding/EV')
     saveDict(dataEmolex, '../resources/embeding/emolex')
-    #saveDict(dataSentimentLexicon, '../resources/embeding/EmojiSentimentLexicon')
-    #saveDict(dataOpinionLexicon, '../resources/embeding/OpinionLexicon')
+    saveDict(dataSentimentLexicon, '../resources/embeding/EmojiSentimentLexicon')
+    saveDict(dataOpinionLexicon, '../resources/embeding/OpinionLexicon')
 
 
     #print("### Positive Example ###")
