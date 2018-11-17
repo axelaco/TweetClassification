@@ -124,6 +124,22 @@ def model1(x_train_3, y_train_3,x_val_3, y_val_3, embedding_layer):
   history=model1.fit(x_train_3, y_train_3, validation_data=(x_val_3, y_val_3),epochs=6, batch_size=50)
   model1.save("./model1.h5")
 
+def model2_bis(x_train_3, y_train_3,x_val_3, y_val_3, embedding_layer):
+    model2 = Sequential()
+    model2.add(embedding_layer)
+    model2.add(Bidirectional(LSTM(32, recurrent_dropout=0.25, return_sequences=True)))
+    model2.add(Dropout(0.5))
+    model2.add(Bidirectional(LSTM(32, recurrent_dropout=0.25,  return_sequences=True)))
+    model2.add(Dropout(0.5))
+    model2.add(Flatten())
+    model2.add(Dense(3, activation='softmax'))
+    model2.compile(loss='categorical_crossentropy',
+              optimizer='Adam',
+              metrics=['acc'])
+    model2.summary()
+    history=model2.fit(x_train_3, y_train_3, validation_data=(x_val_3, y_val_3),epochs=6, batch_size=50)
+    model2.save("./model2.h5")
+
 def model2(x_train_3, y_train_3,x_val_3, y_val_3, embedding_layer):
 
 	model2 = Sequential()
@@ -161,4 +177,4 @@ if __name__ == '__main__':
                           input_length=MAX_SEQUENCE_LENGTH,
                           trainable=False, name='embedding_layer')
 
-  model1(x_train_3, y_train_3,x_val_3, y_val_3, embedding_layer)
+  model2_bis(x_train_3, y_train_3,x_val_3, y_val_3, embedding_layer)
