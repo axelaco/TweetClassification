@@ -21,10 +21,8 @@ from word2vecUtils import afin, emojiValence, depechMood, emolex, \
 
 
 word2vec_tweet = pickle.load(open('../resources/datastories.twitter.300d.pickle', 'rb'))
-EMBEDDING_DIM = 348
-#
-# corpora_train_3 = "../resources/data_train_3.csv"
-# corpora_train_7 = "../resources/data_train_7.csv"
+EMBEDDING_DIM = 344
+
 
 
 # Word2Vec to KeyedVectors 
@@ -123,10 +121,24 @@ def model1(x_train_3, y_train_3,x_val_3, y_val_3, embedding_layer):
 			      optimizer=Adam(lr=0.01),
 			      metrics=['acc'])
   model1.summary()
-  history=model1.fit(x_train_3, y_train_3, validation_data=(x_val_3, y_val_3),epochs=6, batch_size=128)
+  history=model1.fit(x_train_3, y_train_3, validation_data=(x_val_3, y_val_3),epochs=6, batch_size=50)
   model1.save("./model1.h5")
 
+def model2(x_train_3, y_train_3,x_val_3, y_val_3, embedding_layer):
 
+	model2 = Sequential()
+	model2.add(embedding_layer)
+	model2.add(LSTM(32))
+	model2.add(Dropout(0.2))
+	model2.add(Dense(32, activation='relu'))
+	model2.add(Dropout(0.2))
+	model2.add(Dense(3, activation='softmax'))
+	model2.compile(loss='categorical_crossentropy',
+			      optimizer='Adam',
+			      metrics=['acc'])
+	model2.summary()
+	history=model2.fit(x_train_3, y_train_3, validation_data=(x_val_3, y_val_3),epochs=6, batch_size=50)
+	model2.save("./model2.h5")
 
 if __name__ == '__main__':
   corpora_train_3 = '../resources/data_train_3.csv'

@@ -40,21 +40,16 @@ def processDepechMode():
     data = dict()
     f = open('../resources/depech_mood.txt', 'r')
     line = f.readline()
-    ones = np.ones(4)
-    PoS = {'a': 0, 'n': 1, 'v': 2, 'r': 3}
     for line in f.readlines():
-        tmp = np.ones(4)
         arr = line.strip().split(';')
-        firstCol = arr[0].split('#')
-        word = firstCol[0]
-        tmp[PoS[firstCol[1]]] = 0
-        data[word] = np.append(ones - tmp, np.array(arr[1:], dtype=np.float))
+        word = arr[0].split("#")[0]
+        data[word] = np.array(arr[1:], dtype=np.float)
     return data
 
 def depechMood(data, word):
     if word in data:
         return data[word]
-    return np.zeros(12)
+    return np.zeros(8)
 
 def processEmojiSentimentLexicon():
     f = open('../resources/Emoji_Sentiment_Data_v1.0.csv', 'r')
@@ -101,11 +96,13 @@ def processEmolex():
     for line in f.readlines():
         arr = line.strip().split('\t')
         word = arr[0]
+        idx = indexes[arr[1]]
         if (len(word) > 0):
             if word in data:
-                data[word] = np.append(data[word], float(arr[2]))
+                data[word][idx] = float(arr[2])
             else:
-                data[word] = np.array(float(arr[2]), dtype=np.float)
+                data[word] = np.zeros(10, dtype=np.float)
+                data[word][idx] = float(arr[2])
     f.close()
     # add emotion intensity
     f = open('../resources/Emolex_Intensity.txt', 'r')
@@ -115,11 +112,35 @@ def processEmolex():
         word = arr[0]
         if (len(word) > 0):
             if word in data:
-                data[word][indexes[arr[2]]] = arr[1]
+                data[word][indexes[arr[2]]] = float(arr[1])
             else:
                 data[word] = np.zeros(10)
-                data[word][indexes[arr[2]]] = arr[1]
+                data[word][indexes[arr[2]]] = float(arr[1])
     f.close()
+    f = open('../resources/Emolex_Hashtag_Emotion.txt', 'r')
+    for line in f.readlines():
+        arr = line.strip().split('\t')
+        idx = arr[0]
+        word = arr[1]
+        if (len(word) > 0):
+            if word in data:
+                data[word][indexes[idx]] = float(arr[2])
+            else:
+                data[word] = np.zeros(10, dtype=np.float)
+                data[word][indexes[idx]] = float(arr[2])
+    f.close()
+    f = open('../resources/Emolex_Hashtag_Sentiment.txt', 'r')
+    for line in f.readlines():
+        arr = line.strip().split('\t')
+        word = arr[0]
+        idx = indexes[arr[1]]
+        if (len(word) > 0):
+            if word in data:
+                data[word][idx] = 1
+            else:
+                data[word] = np.zeros(10)
+                data[word][idx] = 1
+    f.close()    
     return data
 
 def emolex(data, word):
@@ -133,6 +154,8 @@ def processSentiment140():
     print(df.info())
 
 def positiveExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex, dataSentimentLexicon):
+    size = afin(dataAfin, 'abandon').shape[0] + emojiValence(dataEmoji, '😠').shape[0] + depechMood(dataDepechMood, 'absurdity').shape[0] + emojiSentimentLexicon(dataSentimentLexicon, '😉').shape[0] + emolex(dataEmolex, 'whimper').shape[0]
+    print(size)
     print(afin(dataAfin, 'abandon'))
     print(emojiValence(dataEmoji, '😠'))
     print(depechMood(dataDepechMood, 'absurdity'))
@@ -167,11 +190,9 @@ def main():
     saveDict(dataOpinionLexicon, '../resources/embeding/OpinionLexicon')
 
 
-    #print("### Positive Example ###")
-    #positiveExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex, dataSentimentLexicon)
-    #print("\n### Negative Example ###")
-    #negativeExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex, dataSentimentLexicon)
+    print("### Positive Example ###")
+    positiveExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex, dataSentimentLexicon)
+    print("\n### Negative Example ###")
+    negativeExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex, dataSentimentLexicon)
 #
 #
-
-main()
