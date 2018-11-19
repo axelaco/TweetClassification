@@ -62,7 +62,7 @@ def data_preprocessing(path_tweets):
 def data_preprocessing (path_tweets,corpora):
 	data = pd.read_csv(path_tweets, encoding='utf-8',sep='\t', names=['id','class','text'])
 	if corpora=='train':
-		data['class'] = data['class'].apply(lambda x:0 if x=='negative' else (1 if x=='neutral' else 2 ))  # 0: 	negative, 1: neutral, 2: positive
+		data['class'] = data['class'].apply(lambda x:0 if x=='negative' else (1 if x=='neutral' else 2 ))
 	data['text'] = data['text'].apply(lambda x: standardization3(x))
 	return data['text'], data['class']
 
@@ -108,11 +108,11 @@ def standardization3(tweet):
     tweets = emoji.str2emoji(tweets)
     tweets = [lemmatizer.lemmatize(word,grammar[0].lower()) if grammar[0].lower() in ['a','n','v']  else lemmatizer.lemmatize(word) for word,grammar in pos_tag(tweets)]
     tweets = [tweet for tweet in tweets if (tweet not in punctuation) and (tweet not in stopwords)]
-    tweet = ' '.join(tweets)
-    return tweet
+    #tweet = ' '.join(tweets)
+    return tweets
 
 def create_dataset_word2Vec(tweet):
-    return standardization2(tweet)
+    return standardization3(tweet)
 
 def read_dataset(path):
     df = pd.read_csv(path, sep="\t")

@@ -8,9 +8,12 @@ import sys
 from  gensim.models import Word2Vec
 import word2vecUtils
 from keras.layers.embeddings import Embedding
+from keras.regularizers import l2
 from keras.models import Sequential, Model
-from keras.layers import LSTM, Dropout, Dense, Bidirectional,  Flatten, Input, GRU, GaussianNoise
+from keras.layers import LSTM, Dropout, Dense, Activation, Bidirectional,  Flatten, Input, GRU, GaussianNoise
 from keras import regularizers
+from keras.models import load_model
+from kutilities.layers import Attention
 import matplotlib as mpl
 from keras.optimizers import Adam
 # DEBUG purpose
@@ -60,7 +63,7 @@ def get_train_test(tweet, sentiment, max_len, tokenizer):
     labels_train = to_categorical(np.asarray(sentiment), 3)
     labels_train = labels_train[indices_train]
 
-    split_idx = int(len(data_train) * 0.70)
+    split_idx = int(len(data_train) * 0.80)
     x_train, x_val = data_train[:split_idx], data_train[split_idx:]
     y_train, y_val = labels_train[:split_idx], labels_train[split_idx:]
 
@@ -127,21 +130,23 @@ def model1(x_train_3, y_train_3,x_val_3, y_val_3, embedding_layer):
 def model2_bis(x_train_3, y_train_3,x_val_3, y_val_3, embedding_layer):
     model2 = Sequential()
     model2.add(embedding_layer)
-    model2.add(Bidirectional(LSTM(32, recurrent_dropout=0.25, return_sequences=True)))
-    model2.add(Dropout(0.5))
-    model2.add(Bidirectional(LSTM(32, recurrent_dropout=0.25,  return_sequences=True)))
-    model2.add(Dropout(0.5))
-    model2.add(Flatten())
-    model2.add(Dense(3, activation='softmax'))
-    model2.compile(loss='categorical_crossentropy',
-              optimizer='Adam',
-              metrics=['acc'])
+    model2.add(GaussianNoise(0.3))
+    model2.add(Dropout(0.3))
+    model2.add(Bidirectional(LSTM(150, recurrent_dropout=0.3, kernel_regularizer=regularizers.l2(0), return_sequences=True)))
+    model2.add(Dropout(0.3))
+    model2.add(Bidirectional(LSTM(150, recurrent_dropout=0.3, kernel_regularizer=regularizers.l2(0), return_sequences=True)))
+    model2.add(Dropout(0.3))
+    model2.add(Attention())
+    model2.add(Dense(3, activity_regularizer=l2(0.0001)))
+    model2.add(Activation('softmax'))
+    model2.compile(optimizer=Adam(clipnorm=1, lr=0.001),
+                  loss='categorical_crossentropy',
+                  metrics=['acc'])
     model2.summary()
-    history=model2.fit(x_train_3, y_train_3, validation_data=(x_val_3, y_val_3),epochs=6, batch_size=50)
+    history=model2.fit(x_train_3, y_train_3, validation_data=(x_val_3, y_val_3),epochs=12, batch_size=50)
     model2.save("./model2.h5")
 
 def model2(x_train_3, y_train_3,x_val_3, y_val_3, embedding_layer):
-
 	model2 = Sequential()
 	model2.add(embedding_layer)
 	model2.add(LSTM(32))
@@ -153,8 +158,20 @@ def model2(x_train_3, y_train_3,x_val_3, y_val_3, embedding_layer):
 			      optimizer='Adam',
 			      metrics=['acc'])
 	model2.summary()
-	history=model2.fit(x_train_3, y_train_3, validation_data=(x_val_3, y_val_3),epochs=6, batch_size=50)
+	history=model2.fit(x_train_3, y_train_3, validation_data=(x_val_3, y_val_3), epochs=18, batch_size=50)
 	model2.save("./model2.h5")
+
+def model_final(modelPath, x_train_7, y_train_7, x_val_7, y_val_7):
+  model=load_model("./model1.h5")
+  model.summary()
+  model.layers.pop()
+  model.layers.pop()
+  model.add(Dense(150,activation='relu',name='dense1'))
+  model.add(Dense(7,activation='softmax',name='dense2'))
+  model.summary()
+  model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=["accuracy"])
+  history = model.fit(x_train_7, y_train_7,   validation_data=(x_val_7,y_val_7), epochs=11, batch_size=50)
+  model.save("./model7.h5")
 
 if __name__ == '__main__':
   corpora_train_3 = '../resources/data_train_3.csv'
@@ -175,6 +192,7 @@ if __name__ == '__main__':
                           EMBEDDING_DIM,
                           weights=[embedding_matrix],
                           input_length=MAX_SEQUENCE_LENGTH,
+                          mask_zero=True,
                           trainable=False, name='embedding_layer')
 
   model2_bis(x_train_3, y_train_3,x_val_3, y_val_3, embedding_layer)

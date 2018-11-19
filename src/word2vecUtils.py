@@ -19,7 +19,7 @@ def processAFIN():
 def afin(data, word):
     if word in data:
         return data[word]
-    return np.zeros(11)
+    return  np.random.normal(0, 0.01, 11)
 
 
 def processEmojiValence():
@@ -27,14 +27,14 @@ def processEmojiValence():
     json_data = json.load(open('../resources/emoji_valence.json'))
     for json_elt in json_data:
         word = json_elt['emoji']
-        data[word] = np.zeros(9)
+        data[word] =  np.zeros(9)
         data[word][json_elt['polarity'] + 4] = 1
     return data
 
 def emojiValence(data, word):
     if word in data:
         return data[word]
-    return np.zeros(9)
+    return np.random.normal(0, 0.01, 9)
 
 def processDepechMode():
     data = dict()
@@ -49,7 +49,7 @@ def processDepechMode():
 def depechMood(data, word):
     if word in data:
         return data[word]
-    return np.zeros(8)
+    return np.random.normal(0, 0.01, 8)
 
 def processEmojiSentimentLexicon():
     f = open('../resources/Emoji_Sentiment_Data_v1.0.csv', 'r')
@@ -58,7 +58,7 @@ def processEmojiSentimentLexicon():
     for line in f.readlines():
         arr = line.strip().split(',')
         emoji = arr[0]
-        data[emoji] = np.zeros(4)
+        data[emoji] = np.random.normal(0, 0.01, 4)
         data[emoji][0] = arr[3]
         data[emoji][1] = float(arr[4]) / float(arr[2])
         data[emoji][2] = float(arr[5]) / float(arr[2])
@@ -68,7 +68,7 @@ def processEmojiSentimentLexicon():
 def emojiSentimentLexicon(data, word):
     if word in data:
         return data[word]
-    return np.zeros(4)
+    return np.random.normal(0, 0.01, 4)
 
 
 def processOpinionLexiconEnglish():
@@ -86,7 +86,7 @@ def processOpinionLexiconEnglish():
 def opinionLexiconEnglish(data, word):
     if word in data:
         return data[word]
-    return np.zeros(2)
+    return np.random.normal(0, 0.001, 2)
 
 
 def processEmolex():
@@ -101,7 +101,7 @@ def processEmolex():
             if word in data:
                 data[word][idx] = float(arr[2])
             else:
-                data[word] = np.zeros(10, dtype=np.float)
+                data[word] = np.zeros(10)
                 data[word][idx] = float(arr[2])
     f.close()
     # add emotion intensity
@@ -126,7 +126,7 @@ def processEmolex():
             if word in data:
                 data[word][indexes[idx]] = float(arr[2])
             else:
-                data[word] = np.zeros(10, dtype=np.float)
+                data[word] = np.zeros(10)
                 data[word][indexes[idx]] = float(arr[2])
     f.close()
     f = open('../resources/Emolex_Hashtag_Sentiment.txt', 'r')
@@ -146,7 +146,7 @@ def processEmolex():
 def emolex(data, word):
     if word in data:
         return data[word]
-    return np.zeros(10)
+    return np.random.normal(0, 0.01, 10)
 
 def processSentiment140():
     df = pd.read_csv('../resources/unigrams-pmilexicon.txt', sep='\t', names=['word', 'sentimentScore', 'numPositive', 'numNegative'])
@@ -194,5 +194,5 @@ def main():
     positiveExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex, dataSentimentLexicon)
     print("\n### Negative Example ###")
     negativeExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex, dataSentimentLexicon)
-#
-#
+
+main()
