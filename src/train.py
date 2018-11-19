@@ -21,6 +21,7 @@ from keras.optimizers import Adam
 #importlib.reload(word2vecUtils)
 from word2vecUtils import afin, emojiValence, depechMood, emolex, \
   emojiSentimentLexicon, opinionLexiconEnglish
+from sklearn.model_selection import StratifiedKFold
 
 
 word2vec_tweet = pickle.load(open('../resources/datastories.twitter.300d.pickle', 'rb'))
@@ -52,6 +53,19 @@ def prepareData(corpora3, corpora7):
     word_index = tokenizer.word_index
 
     return word_index, tokenizer, tweet3, tweet7, sentiment3, sentiment7
+
+
+def get_dataset(tweet, sentiment, max_len, tokenizer):
+    sequences_train = tokenizer.texts_to_sequences(tweet)
+    data_train = keras.preprocessing.sequence.pad_sequences(sequences_train, maxlen=max_len)
+    indices_train = np.arange(data_train.shape[0])
+    data_train = data_train[indices_train]
+    labels_train = to_categorical(np.asarray(sentiment), 3)
+    labels_train = labels_train[indices_train]
+
+    return data_train, labels_train
+
+
 
 def get_train_test(tweet, sentiment, max_len, tokenizer):
     sequences_train = tokenizer.texts_to_sequences(tweet)
@@ -187,7 +201,9 @@ if __name__ == '__main__':
 
   embedding_matrix = createEmbedingMatrix(word_index, '../resources/model2.kv', EMBEDDING_DIM)
 
-  x_train_3, x_val_3, y_train_3, y_val_3 = get_train_test(tweet3, sentiment3, MAX_SEQUENCE_LENGTH, tokenizer)
+  # x_train_3, x_val_3, y_train_3, y_val_3 = get_train_test(tweet3, sentiment3, MAX_SEQUENCE_LENGTH, tokenizer)
+  x_dataset, y_dataset = get_dataset(tweet3, sentiment3, MAX_SEQUENCE_LENGTH, tokenizer)
+
   embedding_layer = Embedding(len(word_index) + 1,
                           EMBEDDING_DIM,
                           weights=[embedding_matrix],
@@ -195,4 +211,12 @@ if __name__ == '__main__':
                           mask_zero=True,
                           trainable=False, name='embedding_layer')
 
-  model2_bis(x_train_3, y_train_3,x_val_3, y_val_3, embedding_layer)
+
+  skf = StratifiedKFold(n_splits=10, random_state=42, shuffle=True)
+
+  for train_index, test_index in skf.split(x_dataset, np.argmax(y_dataset, axis=-1)):
+    print("TRAIN:", train_index, "TEST:", test_index)
+    x_train, x_test = x_dataset[train_index], x_dataset[test_index]
+    y_train, y_test = y_dataset[train_index], y_dataset[test_index]
+
+    model2_bis(x_train, y_train, x_test , y_test, embedding_layer)

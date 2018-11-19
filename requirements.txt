@@ -7,3 +7,4 @@ nltk
 git+https://github.com/erikavaris/tokenizer.git
 ekphrasis
 keras_utilities
+sklearn
