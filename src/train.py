@@ -8,7 +8,6 @@ import sys
 from  gensim.models import Word2Vec
 import word2vecUtils
 from keras.layers.embeddings import Embedding
-from keras.regularizers import l2
 from keras.models import Sequential, Model
 from keras.layers import LSTM, Dropout, Dense, Activation, Bidirectional,  Flatten, Input, GRU, GaussianNoise
 from keras import regularizers
@@ -129,9 +128,9 @@ def model(x_train_3, y_train_3,x_val_3, y_val_3, embedding_layer):
     model2.add(embedding_layer)
     model2.add(GaussianNoise(0.3))
     model2.add(Dropout(0.3))
-    model2.add(Bidirectional(LSTM(150, recurrent_dropout=0.3, kernel_regularizer=regularizers.l2(0), return_sequences=True)))
+    model2.add(Bidirectional(LSTM(150, recurrent_dropout=0.3, kernel_regularizer=l2(0), return_sequences=True)))
     model2.add(Dropout(0.3))
-    model2.add(Bidirectional(LSTM(150, recurrent_dropout=0.3, kernel_regularizer=regularizers.l2(0), return_sequences=True)))
+    model2.add(Bidirectional(LSTM(150, recurrent_dropout=0.3, kernel_regularizer=l2(0), return_sequences=True)))
     model2.add(Dropout(0.3))
     model2.add(Attention())
     model2.add(Dense(3, activity_regularizer=l2(0.0001)))
