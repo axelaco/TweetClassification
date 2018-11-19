@@ -123,25 +123,8 @@ def createEmbedingMatrix(word_index, w2vpath, dim):
 
     return embedding_matrix
 
-def model1(x_train_3, y_train_3,x_val_3, y_val_3, embedding_layer):
-  model1 = Sequential()
-  model1.add(embedding_layer)
-  model1.add(GaussianNoise(0.2))
-  model1.add(Dropout(0.3))
-  model1.add(Bidirectional(LSTM(150, recurrent_dropout=0.25, return_sequences=True)))
-  model1.add(Dropout(0.5))
-  model1.add(Bidirectional(LSTM(150, recurrent_dropout=0.25)))
-  model1.add(Dropout(0.5))
-  model1.add(Dense(3, activation='softmax',kernel_regularizer=regularizers.l2(0.0001),
-                activity_regularizer=regularizers.l2(0.0001)))
-  model1.compile(loss='categorical_crossentropy',
-			      optimizer=Adam(lr=0.01),
-			      metrics=['acc'])
-  model1.summary()
-  history=model1.fit(x_train_3, y_train_3, validation_data=(x_val_3, y_val_3),epochs=6, batch_size=50)
-  model1.save("./model1.h5")
 
-def model2_bis(x_train_3, y_train_3,x_val_3, y_val_3, embedding_layer):
+def model(x_train_3, y_train_3,x_val_3, y_val_3, embedding_layer):
     model2 = Sequential()
     model2.add(embedding_layer)
     model2.add(GaussianNoise(0.3))
@@ -159,21 +142,6 @@ def model2_bis(x_train_3, y_train_3,x_val_3, y_val_3, embedding_layer):
     model2.summary()
     history=model2.fit(x_train_3, y_train_3, validation_data=(x_val_3, y_val_3),epochs=12, batch_size=50)
     model2.save("./model2.h5")
-
-def model2(x_train_3, y_train_3,x_val_3, y_val_3, embedding_layer):
-	model2 = Sequential()
-	model2.add(embedding_layer)
-	model2.add(LSTM(32))
-	model2.add(Dropout(0.2))
-	model2.add(Dense(32, activation='relu'))
-	model2.add(Dropout(0.2))
-	model2.add(Dense(3, activation='softmax'))
-	model2.compile(loss='categorical_crossentropy',
-			      optimizer='Adam',
-			      metrics=['acc'])
-	model2.summary()
-	history=model2.fit(x_train_3, y_train_3, validation_data=(x_val_3, y_val_3), epochs=18, batch_size=50)
-	model2.save("./model2.h5")
 
 def model_final(modelPath, x_train_7, y_train_7, x_val_7, y_val_7):
   model=load_model("./model1.h5")
@@ -219,4 +187,4 @@ if __name__ == '__main__':
     x_train, x_test = x_dataset[train_index], x_dataset[test_index]
     y_train, y_test = y_dataset[train_index], y_dataset[test_index]
 
-    model2_bis(x_train, y_train, x_test , y_test, embedding_layer)
+    model(x_train, y_train, x_test , y_test, embedding_layer)
