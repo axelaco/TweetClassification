@@ -4,17 +4,17 @@ from preprocessing_git import data_preprocessing
 from gensim.models import KeyedVectors
 from keras.utils.np_utils import to_categorical
 import pickle
-import sys
-from  gensim.models import Word2Vec
+import os
 import word2vecUtils
 from keras.layers.embeddings import Embedding
 from keras.models import Sequential, Model
 from keras.layers import LSTM, Dropout, Dense, Activation, Bidirectional,  Flatten, Input, GRU, GaussianNoise
-from keras import regularizers
 from keras.models import load_model
 from kutilities.layers import Attention
-import matplotlib as mpl
 from keras.optimizers import Adam
+from score import evaluate_ei
+from score import evaluate_oc
+from score import evaluate_multilabel
 # DEBUG purpose
 #import importlib
 #importlib.reload(word2vecUtils)
@@ -187,3 +187,4 @@ if __name__ == '__main__':
     y_train, y_test = y_dataset[train_index], y_dataset[test_index]
 
     model(x_train, y_train, x_test , y_test, embedding_layer)
+
