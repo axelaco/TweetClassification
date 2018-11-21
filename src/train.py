@@ -4,6 +4,8 @@ from preprocessing_git import data_preprocessing
 from gensim.models import KeyedVectors
 from keras.utils.np_utils import to_categorical
 import pickle
+import pandas as pd
+from scipy.stats import pearsonr
 import os
 import word2vecUtils
 from keras.layers.embeddings import Embedding
@@ -12,9 +14,7 @@ from keras.layers import LSTM, Dropout, Dense, Activation, Bidirectional,  Flatt
 from keras.models import load_model
 from kutilities.layers import Attention
 from keras.optimizers import Adam
-from score import evaluate_ei
-from score import evaluate_oc
-from score import evaluate_multilabel
+import re
 # DEBUG purpose
 #import importlib
 #importlib.reload(word2vecUtils)
@@ -59,21 +59,22 @@ def get_dataset(tweet, sentiment, max_len, tokenizer):
     data_train = keras.preprocessing.sequence.pad_sequences(sequences_train, maxlen=max_len)
     indices_train = np.arange(data_train.shape[0])
     data_train = data_train[indices_train]
-    labels_train = to_categorical(np.asarray(sentiment), 3)
+    labels_train = to_categorical(np.asarray(sentiment), 7)
     labels_train = labels_train[indices_train]
 
     return data_train, labels_train
 
 
-
 def get_train_test(tweet, sentiment, max_len, tokenizer):
     sequences_train = tokenizer.texts_to_sequences(tweet)
+
+    # print(np.asarray(sentiment).shape)
 
     data_train = keras.preprocessing.sequence.pad_sequences(sequences_train, maxlen=max_len)
     indices_train = np.arange(data_train.shape[0])
     data_train = data_train[indices_train]
 
-    labels_train = to_categorical(np.asarray(sentiment), 3)
+    labels_train = to_categorical(np.asarray(sentiment), 7)
     labels_train = labels_train[indices_train]
 
     split_idx = int(len(data_train) * 0.80)
@@ -143,7 +144,7 @@ def model(x_train_3, y_train_3,x_val_3, y_val_3, embedding_layer):
     model2.save("./model2.h5")
 
 def model_final(modelPath, x_train_7, y_train_7, x_val_7, y_val_7):
-  model=load_model("./model1.h5")
+  model = load_model(modelPath, custom_objects={"Attention": Attention})
   model.summary()
   model.layers.pop()
   model.layers.pop()
@@ -151,8 +152,27 @@ def model_final(modelPath, x_train_7, y_train_7, x_val_7, y_val_7):
   model.add(Dense(7,activation='softmax',name='dense2'))
   model.summary()
   model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=["accuracy"])
-  history = model.fit(x_train_7, y_train_7,   validation_data=(x_val_7,y_val_7), epochs=11, batch_size=50)
-  model.save("./model7.h5")
+  history = model.fit(x_train_7, y_train_7,   validation_data=(x_val_7,y_val_7), epochs=18, batch_size=64)
+  return model
+  # model.save("./model7.h5")
+
+
+def pearson_score(model, x_val_7, y_val_7):
+    pred = model.predict(x_val_7)
+    y_pred = np.argmax(pred, axis=1)
+    score = pearsonr(np.argmax(y_val_7, axis=1), y_pred)[0]
+    print(score)
+    return score
+
+def process_test():
+    df = pd.read_csv('../resources/2018-Valence-oc-En-dev.txt', sep="\t")
+    s = df['Intensity Class'].values
+    data = []
+    for i in s:
+        data.append(int(re.search('[-0-9]+(?=:)', i).group(0)))
+
+    return df['Tweet'].values, data
+
 
 if __name__ == '__main__':
   corpora_train_3 = '../resources/data_train_3.csv'
@@ -163,13 +183,26 @@ if __name__ == '__main__':
   word_index, tokenizer, tweet3, tweet7, sentiment3, sentiment7 = prepareData(corpora_train_3, corpora_train_7)
   #model = Word2Vec.load('../resources/model_5M.bin')
   #saveKeyedVectors('../resources/model2.kv', model)
+  sentiment7 = [x + 3 for x in sentiment7]
   
   MAX_SEQUENCE_LENGTH = get_max_len([tweet3, tweet7], tokenizer)
 
   embedding_matrix = createEmbedingMatrix(word_index, '../resources/model2.kv', EMBEDDING_DIM)
 
-  # x_train_3, x_val_3, y_train_3, y_val_3 = get_train_test(tweet3, sentiment3, MAX_SEQUENCE_LENGTH, tokenizer)
-  x_dataset, y_dataset = get_dataset(tweet3, sentiment3, MAX_SEQUENCE_LENGTH, tokenizer)
+  x_train_7, x_val_7, y_train_7, y_val_7 = get_train_test(tweet7, sentiment7, MAX_SEQUENCE_LENGTH, tokenizer)
+
+  # x_dataset, y_dataset = get_dataset(tweet3, sentiment3, MAX_SEQUENCE_LENGTH, tokenizer)
+  x_dataset, y_dataset = get_dataset(tweet7, sentiment7, MAX_SEQUENCE_LENGTH, tokenizer)
+
+  x_data, y_data = process_test()
+
+  y_data = [x + 3 for x in y_data]
+
+  x_val, y_val = get_dataset(x_data, y_data, MAX_SEQUENCE_LENGTH, tokenizer)
+
+  # m = load_model('./model65.h5', custom_objects={"Attention": Attention})
+  # pearson_score(m, x_dataset, y_dataset)
+  # pearson_score(m, x_val, y_val)
 
   embedding_layer = Embedding(len(word_index) + 1,
                           EMBEDDING_DIM,
@@ -178,13 +211,23 @@ if __name__ == '__main__':
                           mask_zero=True,
                           trainable=False, name='embedding_layer')
 
-
   skf = StratifiedKFold(n_splits=10, random_state=42, shuffle=True)
+
+  max_acc = 0
 
   for train_index, test_index in skf.split(x_dataset, np.argmax(y_dataset, axis=-1)):
     print("TRAIN:", train_index, "TEST:", test_index)
     x_train, x_test = x_dataset[train_index], x_dataset[test_index]
     y_train, y_test = y_dataset[train_index], y_dataset[test_index]
 
-    model(x_train, y_train, x_test , y_test, embedding_layer)
+    # model(x_train, y_train, x_test , y_test, embedding_layer)
+    m = model_final("../resources/model2.h5", x_train, y_train, x_test, y_test)
+    acc = pearson_score(m, x_val, y_val)
+    if acc > max_acc:
+        print('New MAX:', acc)
+        max_acc = acc
+        m.save("./model7.h5")
+
+  print(max_acc)
+
 

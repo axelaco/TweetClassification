@@ -194,5 +194,3 @@ def main():
     positiveExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex, dataSentimentLexicon)
     print("\n### Negative Example ###")
     negativeExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex, dataSentimentLexicon)
-
-main()
