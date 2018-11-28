@@ -19,7 +19,7 @@ def processAFIN():
 def afin(data, word):
     if word in data:
         return data[word]
-    return  np.random.normal(0, 0.01, 11)
+    return np.random.normal(0, 0.01, 11)
 
 
 def processEmojiValence():
@@ -174,7 +174,7 @@ def saveDict(data, path):
     with open(path, 'wb') as fp:
         pickle.dump(data, fp)
 
-def main():
+def process_embedding():
     dataAfin = processAFIN()
     dataEmoji = processEmojiValence()
     dataDepechMood = processDepechMode()
@@ -188,9 +188,3 @@ def main():
     saveDict(dataEmolex, '../resources/embeding/emolex')
     saveDict(dataSentimentLexicon, '../resources/embeding/EmojiSentimentLexicon')
     saveDict(dataOpinionLexicon, '../resources/embeding/OpinionLexicon')
-
-
-    print("### Positive Example ###")
-    positiveExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex, dataSentimentLexicon)
-    print("\n### Negative Example ###")
-    negativeExample(dataAfin, dataEmoji, dataDepechMood, dataEmolex, dataSentimentLexicon)

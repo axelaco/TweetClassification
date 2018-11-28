@@ -438,10 +438,4 @@ def str2emoji(tweet):
 		if ej in emojis:
 			tweet[pos]=emojis[ej]
 	return tweet
-           
-            	
-            	
-            	
-#e=str2emoji(["oO", "ok" , ";)","hhh",":‑)"])
-#print(e)
 

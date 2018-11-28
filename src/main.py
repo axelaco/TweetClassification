@@ -1,16 +1,10 @@
-import tensorflow as tf
-import pandas as pd
-import re
-import numpy as np
-import json
 import os
 import sys
 import pickle
-from tensorflow import keras
-import emoji
 import preprocessing_git
 from gensim.models import Word2Vec, KeyedVectors
-
+from word2vecUtils import process_embedding
+from train import train_model
 
 def view_bar(num, total):
     rate = float(num) / total
@@ -19,15 +13,11 @@ def view_bar(num, total):
     sys.stdout.write(r)
     sys.stdout.flush()
 
-def emoji_valence(word2vec):
-    return
-
 
 def prepareDataset():
     data = []
     dir_file = '../tweet_data'
     files = os.listdir(dir_file)
-    files = ['tweet_zizou.txt']
 
     for i in range(len(files)):
         with open(os.path.join(dir_file, files[i])) as f:
@@ -39,7 +29,7 @@ def prepareDataset():
                 idx += 1
             print('\n')
 
-    with open('data_zizou.bin', 'wb') as fp:
+    with open('data.bin', 'wb') as fp:
        pickle.dump(data, fp)
 
 def smallDataset():
@@ -74,7 +64,5 @@ def process_word2Vec(modelFile, words):
 
 
 if __name__ == '__main__':
-    #createWord2Vec('model_5M.bin', 'data_5M.bin')
-    #createWord2Vec('model.bin', 'data.bin')
-    prepareDataset()
-    #process_word2Vec('model_5M.bin', ['joy', 'angry', 'embarassed', 'love', 'starving', 'sleep'])
+    process_embedding()
+    train_model()
