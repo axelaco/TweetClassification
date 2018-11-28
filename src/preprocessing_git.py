@@ -59,12 +59,18 @@ def data_preprocessing(path_tweets):
 
 
 
-def data_preprocessing (path_tweets,corpora):
+def data_preprocessing(path_tweets,corpora):
 	data = pd.read_csv(path_tweets, encoding='utf-8',sep='\t', names=['id','class','text'])
 	if corpora=='train':
 		data['class'] = data['class'].apply(lambda x:0 if x=='negative' else (1 if x=='neutral' else 2 ))
 	data['text'] = data['text'].apply(lambda x: standardization3(x))
 	return data['text'], data['class']
+
+
+def data_preprocessing_test(path_tweets):
+	data = pd.read_csv(path_tweets, encoding='utf-8',sep='\t')
+	data['text'] = data['Tweet'].apply(lambda x: standardization3(x))
+	return data['text']
 
 
 def standardization(tweet):
