@@ -239,4 +239,6 @@ def train_model():
             max_acc = acc
             m.save("./model7.h5")
 
+    return tokenizer, MAX_SEQUENCE_LENGTH
+
 

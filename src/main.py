@@ -4,7 +4,7 @@ import pickle
 import preprocessing_git
 from gensim.models import Word2Vec, KeyedVectors
 from word2vecUtils import process_embedding
-from train import train_model
+from train import train_model, fill_csv
 
 def view_bar(num, total):
     rate = float(num) / total
@@ -65,4 +65,9 @@ def process_word2Vec(modelFile, words):
 
 if __name__ == '__main__':
     process_embedding()
-    train_model()
+    tokenizer, max_len = train_model()
+
+    # uncomment and change csvpath to fill a file with prediction from our model
+    # since train_model save our best model in './model7.h5'we use this path to get it
+
+    # fill_csv(csvpath, './model7.h5', tokenizer, max_len)
