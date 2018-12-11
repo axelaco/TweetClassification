@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn import svm
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from keras.utils import to_categorical
@@ -28,7 +29,7 @@ import pandas as pd
 import io
 import sys
 from keras.models import Model
-from train import get_max_len, createEmbedingMatrix
+from train import get_max_len, createEmbedingMatrix, createEmbeddingMatrixGlove
 from preprocessing_git import data_preprocessing_teacher
 
 # Path to training and testing data file. This data can be downloaded from a link, details of which will be provided.
@@ -43,7 +44,7 @@ NUM_FOLDS = 2                   # Value of K in K-fold Cross Validation
 NUM_CLASSES = 4                 # Number of classes - Happy, Sad, Angry, Others
 MAX_NB_WORDS = None                # To set the upper limit on the number of tokens extracted using keras.preprocessing.text.Tokenizer 
 MAX_SEQUENCE_LENGTH = None         # All sentences having lesser number of words than this will be padded
-EMBEDDING_DIM = 344               # The dimension of the word embeddings
+EMBEDDING_DIM = 300               # The dimension of the word embeddings
 BATCH_SIZE = 200                  # The batch size to be chosen for training the model.
 LSTM_DIM = 300                    # The dimension of the representations learnt by the LSTM model
 DROPOUT = 0.2                     # Fraction of the units to drop for the linear transformation of the inputs. Ref - https://keras.io/layers/recurrent/
@@ -137,6 +138,7 @@ def model1(x_train, y_train, x_val, y_val, embedding_layer):
 
 def phd_def_train():
     trainIndices, u1_train, u2_train, u3_train, labels  = data_preprocessing_semeval('../resources/train.txt', 'train')
+    trainIndices, u1_test, u2_test, u3_test  = data_preprocessing_semeval('../resources/train.txt', 'test')
     print("Extracting tokens...")
     tokenizer = Tokenizer()
     tokenizer.fit_on_texts(u1_train + u2_train + u3_train)
@@ -198,7 +200,7 @@ def teacher_def_train():
     nb_words=len(word_index)+1
 
     y_train = to_categorical(np.asarray(y_train), 4)
-    embedding_matrix = createEmbedingMatrix(word_index, '../resources/model2.kv', EMBEDDING_DIM)
+    embedding_matrix = createEmbeddingMatrixGlove(word_index, '../resources/model2.kv', EMBEDDING_DIM)
     
     embedding_layer = Embedding(nb_words,
                             EMBEDDING_DIM,
@@ -209,8 +211,7 @@ def teacher_def_train():
     split_idx = int(len(x_train)*0.80)
     x_train, x_val = data_train[:split_idx], data_train[split_idx:]
     y_train, y_val = y_train [:split_idx], y_train[split_idx:]
-    model1(x_train, y_train, x_val, y_val, embedding_layer)
-
+    model(x_train, y_train, x_val, y_val, embedding_layer)
 
 def validation_teacher(modelPath):
     x_train, y_train = data_preprocessing_teacher('../resources/train.txt', 'True')
@@ -296,5 +297,6 @@ def validation_phd(modelFile):
                     fout.write(label2emotion[predictions[lineNum]] + '\n')
             print('Completed. Model parameters: ')
 
-#teacher_def_train()
-validation_teacher('./semeval_teacher_bis.h5')
+#phd_def_train()
+teacher_def_train()
+#validation_teacher('./semeval_teacher_bis.h5')

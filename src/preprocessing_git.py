@@ -13,6 +13,9 @@ tknzr = TweetTokenizer()
 
 notstopwords = set(('not', 'no', 'mustn', "mustn\'t"))
 stopwords = set(stopwords.words('english')) - notstopwords
+
+
+
 text_processor = TextPreProcessor(
         # terms that will be normalized
         normalize=['url', 'email', 'user'],
@@ -28,7 +31,7 @@ text_processor = TextPreProcessor(
         
         unpack_hashtags=True,  # perform word segmentation on hashtags
         unpack_contractions=True,  # Unpack contractions (can't -> can not)
-        spell_correct_elong=True,  # spell correction for elongated words
+        spell_correct=True,  # spell correction for elongated words
         
         # select a tokenizer. You can use SocialTokenizer, or pass your own
         # the tokenizer, should take as input a string and return a list of tokens
@@ -39,7 +42,7 @@ lemmatizer = WordNetLemmatizer()
 
 
 emotion2label = {"others":0, "happy":1, "sad":2, "angry":3}
-emotion2label_teacher = {"others":3, "happy":1, "sad":2, "angry":0}
+emotion2label_teacher = {"others":0, "happy":1, "sad":1, "angry":1}
 
 def data_preprocessing(path_tweets,corpora):
 	data = pd.read_csv(path_tweets, encoding='utf-8',sep='\t', names=['id','class','text'])
@@ -75,12 +78,12 @@ def load_data_semeval(path_tweet, label):
 def data_preprocessing_teacher(path_tweet, label):
 	if label=='True':
 		texts, labels = load_data_semeval(path_tweet,label)
-		texts = texts.apply(lambda x: standardization(x))
+		texts = texts.apply(lambda x: standardization_teacher(x))
 		labels = labels.apply(lambda x: emotion2label_teacher[x])	
 		return texts, labels
 	else:
 		texts = load_data_semeval(path_tweet,label)
-		texts = texts.apply(lambda x: standardization(x))	
+		texts = texts.apply(lambda x: standardization_teacher(x))	
 		return texts
 
 def standardization_teacher(tweet):

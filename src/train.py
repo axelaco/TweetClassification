@@ -15,14 +15,16 @@ from keras.optimizers import Adam
 from keras.regularizers import l2
 from keras.preprocessing.sequence import pad_sequences
 import re
+import io
+import os
 # DEBUG purpose
 from word2vecUtils import afin, emojiValence, depechMood, emolex, \
   emojiSentimentLexicon, opinionLexiconEnglish
 from sklearn.model_selection import StratifiedKFold
 
 
-word2vec_tweet = pickle.load(open('../resources/datastories.twitter.300d.pickle', 'rb'))
-EMBEDDING_DIM = 344
+#word2vec_tweet = pickle.load(open('../resources/datastories.twitter.300d.pickle', 'rb'))
+EMBEDDING_DIM = 300
 
 # Word2Vec to KeyedVectors 
 def saveKeyedVectors(path, model):
@@ -86,6 +88,30 @@ def concatenateEmbeding(word, wv_sentiment_dict):
 
     return np.concatenate(concat)
 
+def createEmbeddingMatrixGlove(word_index, w2vpath, dim):
+    oov = []
+    oov.append((np.random.rand(dim) * 2.0) - 1.0)
+    oov = oov / np.linalg.norm(oov)
+    # Load the embedding vectors from ther GloVe file
+    with io.open(os.path.join('../resources', 'glove.840B.300d.txt'), encoding="utf8") as f:
+        for line in f:
+            values = line.split(' ')
+           # print(values)
+            word = values[0]
+            embeddingVector = np.array([float(val) for val in values[1:]])
+            embeddingsIndex[word] = embeddingVector
+        print('Found %s word vectors.' % len(embeddingsIndex))
+
+    # Minimum word index of any word is 1. 
+    embeddingMatrix = np.zeros((len(wordIndex) + 1, dim))
+    for word, i in wordIndex.items():
+        embeddingVector = embeddingsIndex.get(word)
+        if embeddingVector is not None:
+            # words not found in embedding index will be all-zeros.
+            embeddingMatrix[i] = embeddingVector
+        else:
+            embeddingMatrix[i] = oov
+    return embeddingMatrix
 
 def createEmbedingMatrix(word_index, w2vpath, dim):
     embedding_matrix = np.zeros((len(word_index) + 1, dim))
@@ -94,6 +120,8 @@ def createEmbedingMatrix(word_index, w2vpath, dim):
     oov = oov / np.linalg.norm(oov)
 
     path = "../resources/embeding"
+    EMBEDDING_FILE="~/Téléchargements/GoogleNews-vectors-negative300.bin"
+    word2vec = KeyedVectors.load_word2vec_format(EMBEDDING_FILE, binary=True)
 
     # Load sentiment vectors
     sentiment_wv_dict = {
@@ -108,8 +136,8 @@ def createEmbedingMatrix(word_index, w2vpath, dim):
 
 
     for word, i in word_index.items():
-        if word in word2vec_tweet:
-            embedding_matrix[i] = concatenateEmbeding(word, sentiment_wv_dict)
+        if word in word2vec.vocab:
+            embedding_matrix[i] = word2vec.word_vec(word)#np.concatenate(concat)
         else:
             embedding_matrix[i] = oov
 
