@@ -187,19 +187,23 @@ def create_model(embedding_layer):
 def model1(x_train, y_train, x_val, y_val, embedding_layer):
   model1 = Sequential()
   model1.add(embedding_layer)
-  model1.add(Dropout(0.5))
-  model1.add(GRU(128))
-  model1.add(Dropout(0.5))
-  model1.add(Dense(32, activation='relu'))
-  model1.add(Dropout(0.2))
+  model1.add(LSTM(200))
+  model1.add(Dense(64))
+  model1.add(LeakyReLU())
   model1.add(Dense(4, activation='softmax'))
   model1.compile(loss='categorical_crossentropy',
             optimizer='Adam',
             metrics=['acc'])
   model1.summary()
-  model1.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=50, epochs=3,  verbose=1)
+  model1.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=50, epochs=12,  verbose=1)
   model1.save("./semeval_teacher_bis.h5")
-
+  earlystop = EarlyStopping(monitor='val_loss', min_delta=0.6, patience=5, \
+                          verbose=1, mode='auto')
+  filepath="model_lstm-{epoch:02d}-{val_acc:.2f}.hdf5"
+  modelCheckpoint = keras.callbacks.ModelCheckpoint(filepath, monitor='val_loss', verbose=0, save_best_only=False, save_weights_only=False, mode='auto', period=1)
+  callbacks_list = [modelCheckpoint]
+  model1.fit(x_train_3, y_train_3, validation_data=(x_val_3, y_val_3),epochs=12, batch_size=128, callbacks=callbacks_list)
+  model1.save("./sad_model.h5")
   return model1
 
 def phd_def_train():
