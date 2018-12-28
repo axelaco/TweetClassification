@@ -3,7 +3,7 @@ from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from keras.utils import to_categorical
 from keras.models import Sequential
-from keras.layers import Input, Dense, Embedding, LSTM, Concatenate, Reshape, GRU, Bidirectional, Dropout
+from keras.layers import Input, Dense, Embedding, LSTM, Concatenate, Reshape, GRU, Bidirectional, Dropout, LeakyReLU
 import numpy as np
 import keras
 from preprocessing_git import data_preprocessing, standardization
@@ -39,7 +39,6 @@ testDataPath = ""
 solutionPath = ""
 # Path to directory where GloVe file is saved.
 gloveDir = ""
-np.random.seed(7)
 
 NUM_FOLDS = 2                   # Value of K in K-fold Cross Validation
 NUM_CLASSES = 4                 # Number of classes - Happy, Sad, Angry, Others
@@ -120,6 +119,20 @@ def custom_model(x_train_3, y_train_3, x_val_3, y_val_3, embedding_layer):
     model2.fit(x_train_3, y_train_3, validation_data=(x_val_3, y_val_3),epochs=12, batch_size=128, callbacks=callbacks_list)
     model2.save("./custom__model.h5")
 
+def create_custom_model(embedding_layer):
+    model2 = Sequential()
+    model2.add(embedding_layer)
+    model2.add(LSTM(200))
+    model2.add(Dense(64))
+    model2.add(LeakyReLU())
+    model2.add(Dense(4, activity_regularizer=l2(0.0001)))
+    model2.add(Activation('softmax'))
+    model2.load_weights("custom_model-03-0.87.hdf5")
+    model2.compile(optimizer=Adam(clipnorm=1, lr=0.001),
+                  loss='categorical_crossentropy',
+                  metrics=['acc'])
+    model2.summary()
+    return model2
 
 def model(x_train_3, y_train_3, x_val_3, y_val_3, embedding_layer):
     print(y_train_3.shape)
@@ -290,7 +303,7 @@ def validation_teacher(modelPath):
     indices_test = np.arange(data_test.shape[0])
     data_test = data_test[indices_test]
 
-    embedding_matrix = createEmbedingMatrix(word_index, '../resources/model2.kv', EMBEDDING_DIM)
+    embedding_matrix = createEmbeddingMatrixGlove(word_index, '../resources/model2.kv', EMBEDDING_DIM)
 
     embedding_layer = Embedding(nb_words,
                             EMBEDDING_DIM,
@@ -298,10 +311,10 @@ def validation_teacher(modelPath):
                             input_length=MAX_SEQUENCE_LENGTH,
                             trainable=True, name='embedding_layer')
  
-    f = open("./test_angry.txt", "w")
+    f = open("./test_custom.txt", "w")
     f.write("id\tturn1\tturn2\tturn3\tlabel\n")
 #    nn_model=load_model(modelPath, custom_objects={"Attention": Attention})
-    nn_model = create_model(embedding_layer)
+    nn_model = create_custom_model(embedding_layer)
     r = nn_model.predict(data_test)
     print(r)
     data = pd.read_csv("../resources/test.txt", sep='\t', encoding='utf-8',     names=['id','turn1','turn2','turn3'])
@@ -359,5 +372,5 @@ def validation_phd(modelFile):
             print('Completed. Model parameters: ')
 
 #phd_def_train()
-teacher_def_train()
-#validation_teacher('model_project_1.h5')# ./semeval_teacher_bis.h5')
+#teacher_def_train()
+validation_teacher('model_project_1.h5')# ./semeval_teacher_bis.h5')
