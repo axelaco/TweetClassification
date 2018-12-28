@@ -21,9 +21,6 @@ text_processor = TextPreProcessor(
         # terms that will be normalized
         normalize=['url', 'email', 'percent', 'money', 'phone', 'user',
         'time', 'url', 'date', 'number'],
-        # terms that will be annotated
-        annotate={"hashtag", "allcaps", "elongated", "repeated",
-        'emphasis', 'censored'},
         
         fix_html=True,  # fix HTML tokens
         # corpus from which the word statistics are going to be used 
@@ -41,8 +38,7 @@ text_processor = TextPreProcessor(
         
         # select a tokenizer. You can use SocialTokenizer, or pass your own
         # the tokenizer, should take as input a string and return a list of tokens
-        tokenizer=SocialTokenizer(lowercase=True).tokenize,
-        dicts=[emoticons]
+        tokenizer=SocialTokenizer(lowercase=True).tokenize
 )
 lemmatizer = WordNetLemmatizer()
 
@@ -85,12 +81,12 @@ def load_data_semeval(path_tweet, label):
 def data_preprocessing_teacher(path_tweet, label):
 	if label=='True':
 		texts, labels = load_data_semeval(path_tweet,label)
-		texts = texts.apply(lambda x: standardization_teacher(x))
+		texts = texts.apply(lambda x: standardization(x))
 		labels = labels.apply(lambda x: emotion2label_teacher[x])	
 		return texts, labels
 	else:
 		texts = load_data_semeval(path_tweet,label)
-		texts = texts.apply(lambda x: standardization_teacher(x))	
+		texts = texts.apply(lambda x: standardization(x))	
 		return texts
 
 def standardization_teacher(tweet):
@@ -126,7 +122,7 @@ def standardization(tweet):
     tweet=' '.join(emoji.str2emoji(tweet.split()))
     tweets = text_processor.pre_process_doc(tweet)
     tweets = [lemmatizer.lemmatize(word,grammar[0].lower()) if grammar[0].lower() in ['a','n','v']  else lemmatizer.lemmatize(word) for word,grammar in pos_tag(tweets)]
-    tweets = [tweet for tweet in tweets if (tweet not in punctuation) and (tweet not in stopwords)]
+    tweets = [tweet for tweet in tweets if (tweet not in punctuation)]
     return tweets
 
 
