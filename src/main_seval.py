@@ -1,5 +1,4 @@
 import numpy as np
-from sklearn import svm
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from keras.utils import to_categorical
@@ -11,6 +10,7 @@ from preprocessing_git import data_preprocessing, standardization
 from gensim.models import KeyedVectors
 from keras.utils.np_utils import to_categorical
 import pickle
+from keras.callbacks import ModelCheckpoint, EarlyStopping
 import pandas as pd
 from scipy.stats import pearsonr
 from keras.layers.embeddings import Embedding
@@ -39,12 +39,13 @@ testDataPath = ""
 solutionPath = ""
 # Path to directory where GloVe file is saved.
 gloveDir = ""
+np.random.seed(7)
 
 NUM_FOLDS = 2                   # Value of K in K-fold Cross Validation
 NUM_CLASSES = 4                 # Number of classes - Happy, Sad, Angry, Others
 MAX_NB_WORDS = None                # To set the upper limit on the number of tokens extracted using keras.preprocessing.text.Tokenizer 
 MAX_SEQUENCE_LENGTH = None         # All sentences having lesser number of words than this will be padded
-EMBEDDING_DIM = 300               # The dimension of the word embeddings
+EMBEDDING_DIM = 200               # The dimension of the word embeddings
 BATCH_SIZE = 200                  # The batch size to be chosen for training the model.
 LSTM_DIM = 300                    # The dimension of the representations learnt by the LSTM model
 DROPOUT = 0.2                     # Fraction of the units to drop for the linear transformation of the inputs. Ref - https://keras.io/layers/recurrent/
@@ -97,7 +98,32 @@ def buildModel(embeddingMatrix, MAX_SEQUENCE_LENGTH):
     print(model.summary())
     return model
 
+def custom_model(x_train_3, y_train_3, x_val_3, y_val_3, embedding_layer):
+    model2 = Sequential()
+    model2.add(embedding_layer)
+    model2.add(LSTM(200))
+    model2.add(Dense(64))
+    model2.add(LeakyReLU())
+    model2.add(Dense(4, activity_regularizer=l2(0.0001)))
+    model2.add(Activation('softmax'))
+    model2.compile(optimizer=Adam(clipnorm=1, lr=0.001),
+                  loss='categorical_crossentropy',
+                  metrics=['acc'])
+    model2.summary()
+    earlystop = EarlyStopping(monitor='val_loss', min_delta=0.6, patience=5, \
+                          verbose=1, mode='auto')
+
+    filepath="custom_model-{epoch:02d}-{val_acc:.2f}.hdf5"
+    modelCheckpoint = keras.callbacks.ModelCheckpoint(filepath, monitor='val_loss', verbose=0, save_best_only=False, save_weights_only=False, mode='auto', period=1)
+
+    callbacks_list = [modelCheckpoint]
+    model2.fit(x_train_3, y_train_3, validation_data=(x_val_3, y_val_3),epochs=12, batch_size=128, callbacks=callbacks_list)
+    model2.save("./custom__model.h5")
+
+
 def model(x_train_3, y_train_3, x_val_3, y_val_3, embedding_layer):
+    print(y_train_3.shape)
+    print(y_train_3)
     model2 = Sequential()
     model2.add(embedding_layer)
     model2.add(GaussianNoise(0.3))
@@ -107,18 +133,45 @@ def model(x_train_3, y_train_3, x_val_3, y_val_3, embedding_layer):
     model2.add(Bidirectional(LSTM(150, recurrent_dropout=0.3, kernel_regularizer=l2(0), return_sequences=True)))
     model2.add(Dropout(0.3))
     model2.add(Attention())
-    model2.add(Dense(4, activity_regularizer=l2(0.0001)))
+    model2.add(Dense(2, activity_regularizer=l2(0.0001)))
     model2.add(Activation('softmax'))
     model2.compile(optimizer=Adam(clipnorm=1, lr=0.001),
                   loss='categorical_crossentropy',
                   metrics=['acc'])
     model2.summary()
-    model2.fit(x_train_3, y_train_3, validation_data=(x_val_3, y_val_3),epochs=12, batch_size=50)
-    model2.save("./model_test.h5")
+
+    earlystop = EarlyStopping(monitor='val_loss', min_delta=0.6, patience=5, \
+                          verbose=1, mode='auto')
+
+    filepath="angry-model-{epoch:02d}-{val_acc:.2f}.hdf5"
+    modelCheckpoint = keras.callbacks.ModelCheckpoint(filepath, monitor='val_loss', verbose=0, save_best_only=False, save_weights_only=False, mode='auto', period=1)
+
+    callbacks_list = [modelCheckpoint]
+    model2.fit(x_train_3, y_train_3, validation_data=(x_val_3, y_val_3),epochs=12, batch_size=128, callbacks=callbacks_list)
+    model2.save("./sad_model.h5")
+
+def create_model(embedding_layer):
+    model2 = Sequential()
+    model2.add(embedding_layer)
+    model2.add(GaussianNoise(0.3))
+    model2.add(Dropout(0.3))
+    model2.add(Bidirectional(LSTM(150, recurrent_dropout=0.3, kernel_regularizer=l2(0), return_sequences=True)))
+    model2.add(Dropout(0.3))
+    model2.add(Bidirectional(LSTM(150, recurrent_dropout=0.3, kernel_regularizer=l2(0), return_sequences=True)))
+    model2.add(Dropout(0.3))
+    model2.add(Attention())
+    model2.add(Dense(2, activity_regularizer=l2(0.0001)))
+    model2.add(Activation('softmax'))
+    model2.load_weights("angry.hdf5")
+    model2.compile(optimizer=Adam(clipnorm=1, lr=0.001),
+                  loss='categorical_crossentropy',
+                  metrics=['acc'])
+    model2.summary()
+    return model2
+
 
 
 def model1(x_train, y_train, x_val, y_val, embedding_layer):
-
   model1 = Sequential()
   model1.add(embedding_layer)
   model1.add(Dropout(0.5))
@@ -196,22 +249,21 @@ def teacher_def_train():
     data_train = data_train[indices_train]
     indices_test = np.arange(data_test.shape[0])
     data_test = data_test[indices_test]
-    
     nb_words=len(word_index)+1
 
     y_train = to_categorical(np.asarray(y_train), 4)
-    embedding_matrix = createEmbeddingMatrixGlove(word_index, '../resources/model2.kv', EMBEDDING_DIM)
-    
+    embedding_matrix =  createEmbeddingMatrixGlove(word_index, '../resources/model2.kv', EMBEDDING_DIM)
+
     embedding_layer = Embedding(nb_words,
                             EMBEDDING_DIM,
                             weights=[embedding_matrix],
                             input_length=MAX_SEQUENCE_LENGTH,
                             trainable=True, name='embedding_layer')
     
-    split_idx = int(len(x_train)*0.80)
+    split_idx = int(len(x_train)*0.95)
     x_train, x_val = data_train[:split_idx], data_train[split_idx:]
     y_train, y_val = y_train [:split_idx], y_train[split_idx:]
-    model(x_train, y_train, x_val, y_val, embedding_layer)
+    custom_model(x_train, y_train, x_val, y_val, embedding_layer)
 
 def validation_teacher(modelPath):
     x_train, y_train = data_preprocessing_teacher('../resources/train.txt', 'True')
@@ -223,7 +275,7 @@ def validation_teacher(modelPath):
     tokenizer.fit_on_texts(all_tweet)
     word_index = tokenizer.word_index
 
-
+    nb_words=len(word_index)+1
     sequences_train = tokenizer.texts_to_sequences(x_train)
     sequences_test = tokenizer.texts_to_sequences(x_test)
 
@@ -238,9 +290,18 @@ def validation_teacher(modelPath):
     indices_test = np.arange(data_test.shape[0])
     data_test = data_test[indices_test]
 
-    f = open("./test.txt", "w")
+    embedding_matrix = createEmbedingMatrix(word_index, '../resources/model2.kv', EMBEDDING_DIM)
+
+    embedding_layer = Embedding(nb_words,
+                            EMBEDDING_DIM,
+                            weights=[embedding_matrix],
+                            input_length=MAX_SEQUENCE_LENGTH,
+                            trainable=True, name='embedding_layer')
+ 
+    f = open("./test_angry.txt", "w")
     f.write("id\tturn1\tturn2\tturn3\tlabel\n")
-    nn_model=load_model(modelPath, custom_objects={"Attention": Attention})
+#    nn_model=load_model(modelPath, custom_objects={"Attention": Attention})
+    nn_model = create_model(embedding_layer)
     r = nn_model.predict(data_test)
     print(r)
     data = pd.read_csv("../resources/test.txt", sep='\t', encoding='utf-8',     names=['id','turn1','turn2','turn3'])
@@ -248,14 +309,14 @@ def validation_teacher(modelPath):
     for d in range(1,len(data)):
         i=d-1 
         idx=np.argmax(r[i])
-        if (idx==0):
-            label="angry"
-        elif(idx==1):
-            label="happy"
-        elif(idx==3):
+        if (idx==3):
             label="others"
         elif(idx==2):
             label="sad"
+        elif(idx==1):
+            label="happy"
+        elif(idx==0):
+            label="angry"
         f.write(str(data["id"][d])+"\t"+str(data["turn1"][d])+"\t"+str(data["turn2"][d])+"\t"+str(data["turn3"][d])+"\t"+label+"\n")
     # print(str(data["id"][d])+"\t"+str(data["turn1"][d])+"\t"+str(data["turn2"][d])+"\t"+str (data["turn3"][d])+"\t"+label)
     f.close()
@@ -299,4 +360,4 @@ def validation_phd(modelFile):
 
 #phd_def_train()
 teacher_def_train()
-#validation_teacher('./semeval_teacher_bis.h5')
+#validation_teacher('model_project_1.h5')# ./semeval_teacher_bis.h5')

@@ -8,7 +8,7 @@ import pandas as pd
 from scipy.stats import pearsonr
 from keras.layers.embeddings import Embedding
 from keras.models import Sequential, Model
-from keras.layers import LSTM, Dropout, Dense, Activation, Bidirectional,  Flatten, Input, GRU, GaussianNoise
+from keras.layers import LSTM, Dropout, Dense, Activation, Bidirectional,  Flatten, Input, GRU, GaussianNoise, LeakyReLU
 from keras.models import load_model
 from kutilities.layers import Attention
 from keras.optimizers import Adam
@@ -17,14 +17,15 @@ from keras.preprocessing.sequence import pad_sequences
 import re
 import io
 import os
+from ekphrasis.classes.segmenter import Segmenter
 # DEBUG purpose
 from word2vecUtils import afin, emojiValence, depechMood, emolex, \
   emojiSentimentLexicon, opinionLexiconEnglish
 from sklearn.model_selection import StratifiedKFold
 
-
-#word2vec_tweet = pickle.load(open('../resources/datastories.twitter.300d.pickle', 'rb'))
-EMBEDDING_DIM = 300
+seg_eng = Segmenter(corpus="english") 
+word2vec_tweet = pickle.load(open('../resources/datastories.twitter.300d.pickle', 'rb'))
+EMBEDDING_DIM = 200
 
 # Word2Vec to KeyedVectors 
 def saveKeyedVectors(path, model):
@@ -92,8 +93,9 @@ def createEmbeddingMatrixGlove(word_index, w2vpath, dim):
     oov = []
     oov.append((np.random.rand(dim) * 2.0) - 1.0)
     oov = oov / np.linalg.norm(oov)
+    embeddingsIndex = {}
     # Load the embedding vectors from ther GloVe file
-    with io.open(os.path.join('../resources', 'glove.840B.300d.txt'), encoding="utf8") as f:
+    with io.open(os.path.join('../resources', 'glove.twitter.27B.200d.txt'), encoding="utf8") as f:
         for line in f:
             values = line.split(' ')
            # print(values)
@@ -103,8 +105,8 @@ def createEmbeddingMatrixGlove(word_index, w2vpath, dim):
         print('Found %s word vectors.' % len(embeddingsIndex))
 
     # Minimum word index of any word is 1. 
-    embeddingMatrix = np.zeros((len(wordIndex) + 1, dim))
-    for word, i in wordIndex.items():
+    embeddingMatrix = np.zeros((len(word_index) + 1, dim))
+    for word, i in word_index.items():
         embeddingVector = embeddingsIndex.get(word)
         if embeddingVector is not None:
             # words not found in embedding index will be all-zeros.
@@ -120,9 +122,9 @@ def createEmbedingMatrix(word_index, w2vpath, dim):
     oov = oov / np.linalg.norm(oov)
 
     path = "../resources/embeding"
-    EMBEDDING_FILE="~/Téléchargements/GoogleNews-vectors-negative300.bin"
-    word2vec = KeyedVectors.load_word2vec_format(EMBEDDING_FILE, binary=True)
-
+    # EMBEDDING_FILE="~/Téléchargements/GoogleNews-vectors-negative300.bin"
+    # word2vec = KeyedVectors.load_word2vec_format(EMBEDDING_FILE, binary=True)
+    """
     # Load sentiment vectors
     sentiment_wv_dict = {
       'afin': [pickle.load(open(path + '/afin', 'rb')), afin],
@@ -133,11 +135,14 @@ def createEmbedingMatrix(word_index, w2vpath, dim):
       'opinion': [pickle.load(open(path + '/OpinionLexicon',
       'rb')),opinionLexiconEnglish]
     }
+    """
 
 
     for word, i in word_index.items():
-        if word in word2vec.vocab:
-            embedding_matrix[i] = word2vec.word_vec(word)#np.concatenate(concat)
+        if word in word2vec_tweet: 
+            embedding_matrix[i] = word2vec_tweet[word]#np.concatenate(concat)
+        elif seg_eng.segment(word) in word2vec_tweet: 
+            embedding_matrix[i] = word2vec_tweet[seg_end.segment(word)]
         else:
             embedding_matrix[i] = oov
 

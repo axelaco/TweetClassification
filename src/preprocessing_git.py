@@ -1,5 +1,6 @@
 from ekphrasis.classes.preprocessor import TextPreProcessor
 from ekphrasis.classes.tokenizer import SocialTokenizer
+from ekphrasis.dicts.emoticons import emoticons
 import emoji
 from nltk import pos_tag
 from nltk.stem import WordNetLemmatizer
@@ -18,7 +19,11 @@ stopwords = set(stopwords.words('english')) - notstopwords
 
 text_processor = TextPreProcessor(
         # terms that will be normalized
-        normalize=['url', 'email', 'user'],
+        normalize=['url', 'email', 'percent', 'money', 'phone', 'user',
+        'time', 'url', 'date', 'number'],
+        # terms that will be annotated
+        annotate={"hashtag", "allcaps", "elongated", "repeated",
+        'emphasis', 'censored'},
         
         fix_html=True,  # fix HTML tokens
         # corpus from which the word statistics are going to be used 
@@ -32,17 +37,19 @@ text_processor = TextPreProcessor(
         unpack_hashtags=True,  # perform word segmentation on hashtags
         unpack_contractions=True,  # Unpack contractions (can't -> can not)
         spell_correct=True,  # spell correction for elongated words
+        pell_correct_elong=True,
         
         # select a tokenizer. You can use SocialTokenizer, or pass your own
         # the tokenizer, should take as input a string and return a list of tokens
-        tokenizer=SocialTokenizer(lowercase=True).tokenize
+        tokenizer=SocialTokenizer(lowercase=True).tokenize,
+        dicts=[emoticons]
 )
 lemmatizer = WordNetLemmatizer()
 
 
 
 emotion2label = {"others":0, "happy":1, "sad":2, "angry":3}
-emotion2label_teacher = {"others":0, "happy":1, "sad":1, "angry":1}
+emotion2label_teacher = {"others":3, "happy":1, "sad":2, "angry":0}
 
 def data_preprocessing(path_tweets,corpora):
 	data = pd.read_csv(path_tweets, encoding='utf-8',sep='\t', names=['id','class','text'])
