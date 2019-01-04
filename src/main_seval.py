@@ -100,9 +100,10 @@ def buildModel(embeddingMatrix, MAX_SEQUENCE_LENGTH):
 def custom_model(x_train_3, y_train_3, x_val_3, y_val_3, embedding_layer):
     model2 = Sequential()
     model2.add(embedding_layer)
-    model2.add(LSTM(200))
+    model2.add(LSTM(100))
     model2.add(Dense(64))
     model2.add(LeakyReLU())
+    model2.add(Dense(64))
     model2.add(Dense(4, activity_regularizer=l2(0.0001)))
     model2.add(Activation('softmax'))
     model2.compile(optimizer=Adam(clipnorm=1, lr=0.001),
@@ -122,12 +123,13 @@ def custom_model(x_train_3, y_train_3, x_val_3, y_val_3, embedding_layer):
 def create_custom_model(embedding_layer):
     model2 = Sequential()
     model2.add(embedding_layer)
-    model2.add(LSTM(200))
+    model2.add(LSTM(100))
     model2.add(Dense(64))
     model2.add(LeakyReLU())
+    model2.add(Dense(64))
     model2.add(Dense(4, activity_regularizer=l2(0.0001)))
     model2.add(Activation('softmax'))
-    model2.load_weights("custom_model-03-0.87.hdf5")
+    model2.load_weights("custom_model-05-0.88.hdf5")
     model2.compile(optimizer=Adam(clipnorm=1, lr=0.001),
                   loss='categorical_crossentropy',
                   metrics=['acc'])
@@ -183,11 +185,28 @@ def create_model(embedding_layer):
     return model2
 
 
+def create_model1(embedding_layer):
+  model1 = Sequential()
+  model1.add(embedding_layer)
+  model1.add(Bidirectional(LSTM(100, recurrent_dropout=0.25, return_sequences=True)))
+  model1.add(Dropout(0.3))
+  model1.add(Bidirectional(LSTM(100,  recurrent_dropout=0.25)))
+  model1.add(Dense(64))
+  model1.add(LeakyReLU())
+  model1.add(Dense(4, activation='softmax'))
+  model1.load_weights("model_lstm-03-0.88.hdf5")
+  model1.compile(loss='categorical_crossentropy',
+            optimizer='Adam',
+            metrics=['acc'])
+  model1.summary()
+  return model1
 
 def model1(x_train, y_train, x_val, y_val, embedding_layer):
   model1 = Sequential()
   model1.add(embedding_layer)
-  model1.add(LSTM(200))
+  model1.add(Bidirectional(LSTM(100, recurrent_dropout=0.25, return_sequences=True)))
+  model1.add(Dropout(0.3))
+  model1.add(Bidirectional(LSTM(100,  recurrent_dropout=0.25)))
   model1.add(Dense(64))
   model1.add(LeakyReLU())
   model1.add(Dense(4, activation='softmax'))
@@ -195,15 +214,13 @@ def model1(x_train, y_train, x_val, y_val, embedding_layer):
             optimizer='Adam',
             metrics=['acc'])
   model1.summary()
-  model1.fit(x_train, y_train, validation_data=(x_val, y_val), batch_size=50, epochs=12,  verbose=1)
-  model1.save("./semeval_teacher_bis.h5")
+  filepath="model_lstm-{epoch:02d}-{val_acc:.2f}.hdf5"
   earlystop = EarlyStopping(monitor='val_loss', min_delta=0.6, patience=5, \
                           verbose=1, mode='auto')
-  filepath="model_lstm-{epoch:02d}-{val_acc:.2f}.hdf5"
   modelCheckpoint = keras.callbacks.ModelCheckpoint(filepath, monitor='val_loss', verbose=0, save_best_only=False, save_weights_only=False, mode='auto', period=1)
   callbacks_list = [modelCheckpoint]
-  model1.fit(x_train_3, y_train_3, validation_data=(x_val_3, y_val_3),epochs=12, batch_size=128, callbacks=callbacks_list)
-  model1.save("./sad_model.h5")
+  model1.fit(x_train, y_train, validation_data=(x_val, y_val),epochs=12, batch_size=50, callbacks=callbacks_list)
+  model1.save("./model1.h5")
   return model1
 
 def phd_def_train():

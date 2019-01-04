@@ -81,12 +81,12 @@ def load_data_semeval(path_tweet, label):
 def data_preprocessing_teacher(path_tweet, label):
 	if label=='True':
 		texts, labels = load_data_semeval(path_tweet,label)
-		texts = texts.apply(lambda x: standardization(x))
+		texts = texts.apply(lambda x: standardization_teacher(x))
 		labels = labels.apply(lambda x: emotion2label_teacher[x])	
 		return texts, labels
 	else:
 		texts = load_data_semeval(path_tweet,label)
-		texts = texts.apply(lambda x: standardization(x))	
+		texts = texts.apply(lambda x: standardization_teacher(x))	
 		return texts
 
 def standardization_teacher(tweet):
@@ -113,7 +113,7 @@ def standardization_teacher(tweet):
 	tweet = re.sub(r" plz[\s|$]", " please ",tweet)
 	tweet = re.sub(r"^([1-9] |1[0-9]| 2[0-9]|3[0-1])(.|-)([1-9] |1[0-2])(.|-|)20[0-9][0-9]"," ",tweet)
 	tweet = [lemmatizer.lemmatize(i,j[0].lower()) if j[0].lower() in ['a','n','v']  else lemmatizer.lemmatize(i) for i,j in pos_tag(tknzr.tokenize(tweet))]
-	tweet = [ i for i in tweet if (i not in stopwords) and (i not in punctuation ) ]
+	tweet = [ i for i in tweet if (i not in punctuation ) ]
 	tweet = ' '.join(tweet)
 	return tweet.lower()
 
