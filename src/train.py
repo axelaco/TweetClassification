@@ -23,7 +23,6 @@ from word2vecUtils import afin, emojiValence, depechMood, emolex, \
   emojiSentimentLexicon, opinionLexiconEnglish
 from sklearn.model_selection import StratifiedKFold
 
-seg_eng = Segmenter(corpus="english") 
 word2vec_tweet = pickle.load(open('../resources/datastories.twitter.300d.pickle', 'rb'))
 EMBEDDING_DIM = 200
 
@@ -122,30 +121,12 @@ def createEmbedingMatrix(word_index, w2vpath, dim):
     oov = oov / np.linalg.norm(oov)
 
     path = "../resources/embeding"
-    # EMBEDDING_FILE="~/Téléchargements/GoogleNews-vectors-negative300.bin"
-    # word2vec = KeyedVectors.load_word2vec_format(EMBEDDING_FILE, binary=True)
-    """
-    # Load sentiment vectors
-    sentiment_wv_dict = {
-      'afin': [pickle.load(open(path + '/afin', 'rb')), afin],
-      'ev': [pickle.load(open(path + '/EV', 'rb')), emojiValence],
-      'depech': [pickle.load(open(path + '/depech', 'rb')), depechMood],
-      'emolex': [pickle.load(open(path + '/emolex', 'rb')), emolex],
-      'emoji': [pickle.load(open(path + '/EmojiSentimentLexicon', 'rb')),emojiSentimentLexicon],
-      'opinion': [pickle.load(open(path + '/OpinionLexicon',
-      'rb')),opinionLexiconEnglish]
-    }
-    """
-
 
     for word, i in word_index.items():
         if word in word2vec_tweet: 
-            embedding_matrix[i] = word2vec_tweet[word]#np.concatenate(concat)
-        elif seg_eng.segment(word) in word2vec_tweet: 
-            embedding_matrix[i] = word2vec_tweet[seg_end.segment(word)]
+            embedding_matrix[i] = word2vec_tweet[word]
         else:
             embedding_matrix[i] = oov
-
     return embedding_matrix
 
 
