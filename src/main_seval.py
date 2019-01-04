@@ -97,6 +97,47 @@ def buildModel(embeddingMatrix, MAX_SEQUENCE_LENGTH):
     print(model.summary())
     return model
 
+def ss_lstm(x_train_3, y_train_3, x_val_3, y_val_3, embedding_layer1, embedding_layer2):
+    model2 = Sequential()
+    model2.add(embedding_layer)
+    model2.add(LSTM(100))
+    
+    lstm = LSTM(100)
+    twitter_lstm = LSTM(300)
+
+    lstm1 = lstm(embedding_layer1)
+    lstm2 = twitter_lstm(embedding_layer2)
+
+    lstm1_dense = Dense(64)(lstm1)
+    lstm2_dense = Dense(64)(lstm2)
+
+    inp = Concatenate(axis=-1)([lstm1_dense, lstm2_dense])
+
+    leaky_relu = LeakyReLU()(inp)
+
+    out = Dense(64)(leaky_relu)
+
+    out = Dense(4, activation='softmax', activity_regularizer=l2(0.0001))(out)
+
+    adam = optimizers.adam(lr=0.001)
+
+    model = Model(out)
+
+    model.compile(loss='categorical_crossentropy',
+                optimizer=adam,
+                metrics=['acc'])
+
+    model.summary()
+
+    earlystop = EarlyStopping(monitor='val_loss', min_delta=0.6, patience=5, \
+                          verbose=1, mode='auto')
+
+    filepath="custom_model-{epoch:02d}-{val_acc:.2f}.hdf5"
+    modelCheckpoint = keras.callbacks.ModelCheckpoint(filepath, monitor='val_loss', verbose=0, save_best_only=False, save_weights_only=False, mode='auto', period=1)
+
+    callbacks_list = [modelCheckpoint]
+    model2.fit(x_train_3, y_train_3, validation_data=(x_val_3, y_val_3),epochs=12, batch_size=128, callbacks=callbacks_list)
+
 def custom_model(x_train_3, y_train_3, x_val_3, y_val_3, embedding_layer):
     model2 = Sequential()
     model2.add(embedding_layer)
@@ -287,17 +328,24 @@ def teacher_def_train():
 
     y_train = to_categorical(np.asarray(y_train), 4)
     embedding_matrix =  createEmbeddingMatrixGlove(word_index, '../resources/model2.kv', EMBEDDING_DIM)
+    embedding_matrix_2 = createEmbeddingMatrix(word_index, '../resources/model2.kv', 300)
 
-    embedding_layer = Embedding(nb_words,
+    embedding_layer_2 = Embedding(nb_words,
                             EMBEDDING_DIM,
                             weights=[embedding_matrix],
+                            input_length=MAX_SEQUENCE_LENGTH,
+                            trainable=True, name='embedding_layer')
+
+    embedding_layer_1 = Embedding(nb_words,
+                            EMBEDDING_DIM,
+                            weights=[embedding_matrix_2],
                             input_length=MAX_SEQUENCE_LENGTH,
                             trainable=True, name='embedding_layer')
     
     split_idx = int(len(x_train)*0.95)
     x_train, x_val = data_train[:split_idx], data_train[split_idx:]
     y_train, y_val = y_train [:split_idx], y_train[split_idx:]
-    custom_model(x_train, y_train, x_val, y_val, embedding_layer)
+    ss_lstm(x_train, y_train, x_val, y_val, embedding_layer_1, embedding_layer_2)
 
 def validation_teacher(modelPath):
     x_train, y_train = data_preprocessing_teacher('../resources/train.txt', 'True')
