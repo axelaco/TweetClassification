@@ -92,6 +92,7 @@ def data_preprocessing_teacher(path_tweet, label):
 def standardization_teacher(tweet):
 	tweet = re.sub(r"\\u2019", "'", tweet)
 	tweet = re.sub(r"\\u002c", ",", tweet)
+	tweet = tweet.lower()
 	tweet=emoji.str2emoji(tweet)
 	tweet = re.sub(r"(http|https)?:\/\/[a-zA-Z0-9\.-]+\.[a-zA-Z]{2,4}(/\S*)?", " ", tweet)
 	tweet = re.sub(r"u r "," you are ",tweet)
