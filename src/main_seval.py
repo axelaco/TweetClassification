@@ -32,23 +32,13 @@ from keras.models import Model
 from train import get_max_len, createEmbedingMatrix, createEmbeddingMatrixGlove
 from preprocessing_git import data_preprocessing_teacher
 
-# Path to training and testing data file. This data can be downloaded from a link, details of which will be provided.
-trainDataPath = ""
-testDataPath = ""
-# Output file that will be generated. This file can be directly submitted.
-solutionPath = ""
-# Path to directory where GloVe file is saved.
-gloveDir = ""
 
-NUM_FOLDS = 2                   # Value of K in K-fold Cross Validation
 NUM_CLASSES = 4                 # Number of classes - Happy, Sad, Angry, Others
-MAX_NB_WORDS = None                # To set the upper limit on the number of tokens extracted using keras.preprocessing.text.Tokenizer 
-MAX_SEQUENCE_LENGTH = None         # All sentences having lesser number of words than this will be padded
 EMBEDDING_DIM = 200               # The dimension of the word embeddings
-BATCH_SIZE = 200                  # The batch size to be chosen for training the model.
-LSTM_DIM = 300                    # The dimension of the representations learnt by the LSTM model
-DROPOUT = 0.2                     # Fraction of the units to drop for the linear transformation of the inputs. Ref - https://keras.io/layers/recurrent/
-NUM_EPOCHS = 10                  # Number of epochs to train a model for
+BATCH_SIZE = 128                  # The batch size to be chosen for training the model.
+LSTM_DIM = 100                    # The dimension of the representations learnt by the LSTM model
+DROPOUT = 0.3                     # Fraction of the units to drop for the linear transformation of the inputs. Ref - https://keras.io/layers/recurrent/
+NUM_EPOCHS = 12                  # Number of epochs to train a model for
 LEARNING_RATE = 0.001
 
 
@@ -97,174 +87,92 @@ def buildModel(embeddingMatrix, MAX_SEQUENCE_LENGTH):
     print(model.summary())
     return model
 
-def ss_lstm(x_train_3, y_train_3, x_val_3, y_val_3, embedding_layer1, embedding_layer2):
-    model2 = Sequential()
-    model2.add(embedding_layer)
-    model2.add(LSTM(100))
-    
-    lstm = LSTM(100)
-    twitter_lstm = LSTM(300)
+def lstm_model(x_train_3, y_train_3, x_val_3, y_val_3, embedding_layer):
+    model = Sequential()
+    model.add(embedding_layer)
+    model.add(LSTM(100))
+    model.add(Dense(64))
+    model.add(LeakyReLU())
+    model.add(Dense(64))
+    model.add(Dense(4, activity_regularizer=l2(0.0001)))
+    model.add(Activation('softmax'))
+    model.compile(optimizer=Adam(clipnorm=1, lr=0.001),
+                  loss='categorical_crossentropy',
+                  metrics=['acc'])
+    model.summary()
+    earlystop = EarlyStopping(monitor='val_loss', min_delta=0.6, patience=5, \
+                          verbose=1, mode='auto')
 
-    lstm1 = lstm(embedding_layer1)
-    lstm2 = twitter_lstm(embedding_layer2)
+    filepath="lstm_model-{epoch:02d}-{val_acc:.2f}.hdf5"
+    modelCheckpoint = keras.callbacks.ModelCheckpoint(filepath, monitor='val_loss', verbose=0, save_best_only=False, save_weights_only=False, mode='auto', period=1)
 
-    lstm1_dense = Dense(64)(lstm1)
-    lstm2_dense = Dense(64)(lstm2)
+    callbacks_list = [modelCheckpoint]
+    model.fit(x_train_3, y_train_3, validation_data=(x_val_3, y_val_3),epochs=NUM_EPOCHS, batch_size=BATCH_SIZE, callbacks=callbacks_list)
+    model.save("./lstm_model.h5")
 
-    inp = Concatenate(axis=-1)([lstm1_dense, lstm2_dense])
+def lstm_model_with_weight(embedding_layer, weight_filename):
+    model = Sequential()
+    model.add(embedding_layer)
+    model.add(LSTM(100))
+    model.add(Dense(64))
+    model.add(LeakyReLU())
+    model.add(Dense(64))
+    model.add(Dense(4, activity_regularizer=l2(0.0001)))
+    model.add(Activation('softmax'))
+    model.load_weights(weight_filename)
+    model.compile(optimizer=Adam(clipnorm=1, lr=0.001),
+                  loss='categorical_crossentropy',
+                  metrics=['acc'])
+    model.summary()
+    return model
 
-    leaky_relu = LeakyReLU()(inp)
-
-    out = Dense(64)(leaky_relu)
-
-    out = Dense(4, activation='softmax', activity_regularizer=l2(0.0001))(out)
-
-    adam = optimizers.adam(lr=0.001)
-
-    model = Model(out)
-
-    model.compile(loss='categorical_crossentropy',
-                optimizer=adam,
-                metrics=['acc'])
-
+def b_lstm_model(x_train_3, y_train_3, x_val_3, y_val_3, embedding_layer):
+    model = Sequential()
+    model.add(embedding_layer)
+    model.add(GaussianNoise(0.3))
+    model.add(Dropout(0.3))
+    model.add(Bidirectional(LSTM(150, recurrent_dropout=0.3, kernel_regularizer=l2(0), return_sequences=True)))
+    model.add(Dropout(0.3))
+    model.add(Bidirectional(LSTM(150, recurrent_dropout=0.3, kernel_regularizer=l2(0), return_sequences=True)))
+    model.add(Dropout(0.3))
+    model.add(Attention())
+    model.add(Dense(2, activity_regularizer=l2(0.0001)))
+    model.add(Activation('softmax'))
+    model.compile(optimizer=Adam(clipnorm=1, lr=0.001),
+                  loss='categorical_crossentropy',
+                  metrics=['acc'])
     model.summary()
 
     earlystop = EarlyStopping(monitor='val_loss', min_delta=0.6, patience=5, \
                           verbose=1, mode='auto')
 
-    filepath="custom_model-{epoch:02d}-{val_acc:.2f}.hdf5"
+    filepath="b_lstm-model-{epoch:02d}-{val_acc:.2f}.hdf5"
     modelCheckpoint = keras.callbacks.ModelCheckpoint(filepath, monitor='val_loss', verbose=0, save_best_only=False, save_weights_only=False, mode='auto', period=1)
 
     callbacks_list = [modelCheckpoint]
-    model2.fit(x_train_3, y_train_3, validation_data=(x_val_3, y_val_3),epochs=12, batch_size=128, callbacks=callbacks_list)
+    model.fit(x_train_3, y_train_3, validation_data=(x_val_3, y_val_3),epochs=NUM_EPOCHS, batch_size=BATCH_SIZE, callbacks=callbacks_list)
+    model.save("./b_lstm-model.h5")
 
-def custom_model(x_train_3, y_train_3, x_val_3, y_val_3, embedding_layer):
-    model2 = Sequential()
-    model2.add(embedding_layer)
-    model2.add(LSTM(100))
-    model2.add(Dense(64))
-    model2.add(LeakyReLU())
-    model2.add(Dense(64))
-    model2.add(Dense(4, activity_regularizer=l2(0.0001)))
-    model2.add(Activation('softmax'))
-    model2.compile(optimizer=Adam(clipnorm=1, lr=0.001),
+def b_lstm_model_with_weight(embedding_layer, weight_filename):
+    model = Sequential()
+    model.add(embedding_layer)
+    model.add(GaussianNoise(0.3))
+    model.add(Dropout(0.3))
+    model.add(Bidirectional(LSTM(150, recurrent_dropout=0.3, kernel_regularizer=l2(0), return_sequences=True)))
+    model.add(Dropout(0.3))
+    model.add(Bidirectional(LSTM(150, recurrent_dropout=0.3, kernel_regularizer=l2(0), return_sequences=True)))
+    model.add(Dropout(0.3))
+    model.add(Attention())
+    model.add(Dense(2, activity_regularizer=l2(0.0001)))
+    model.add(Activation('softmax'))
+    model.load_weights(weight_filename)
+    model.compile(optimizer=Adam(clipnorm=1, lr=0.001),
                   loss='categorical_crossentropy',
                   metrics=['acc'])
-    model2.summary()
-    earlystop = EarlyStopping(monitor='val_loss', min_delta=0.6, patience=5, \
-                          verbose=1, mode='auto')
+    model.summary()
+    return model
 
-    filepath="custom_model-{epoch:02d}-{val_acc:.2f}.hdf5"
-    modelCheckpoint = keras.callbacks.ModelCheckpoint(filepath, monitor='val_loss', verbose=0, save_best_only=False, save_weights_only=False, mode='auto', period=1)
-
-    callbacks_list = [modelCheckpoint]
-    model2.fit(x_train_3, y_train_3, validation_data=(x_val_3, y_val_3),epochs=12, batch_size=128, callbacks=callbacks_list)
-    model2.save("./custom__model.h5")
-
-def create_custom_model(embedding_layer):
-    model2 = Sequential()
-    model2.add(embedding_layer)
-    model2.add(LSTM(100))
-    model2.add(Dense(64))
-    model2.add(LeakyReLU())
-    model2.add(Dense(64))
-    model2.add(Dense(4, activity_regularizer=l2(0.0001)))
-    model2.add(Activation('softmax'))
-    model2.load_weights("custom_model-05-0.88.hdf5")
-    model2.compile(optimizer=Adam(clipnorm=1, lr=0.001),
-                  loss='categorical_crossentropy',
-                  metrics=['acc'])
-    model2.summary()
-    return model2
-
-def model(x_train_3, y_train_3, x_val_3, y_val_3, embedding_layer):
-    print(y_train_3.shape)
-    print(y_train_3)
-    model2 = Sequential()
-    model2.add(embedding_layer)
-    model2.add(GaussianNoise(0.3))
-    model2.add(Dropout(0.3))
-    model2.add(Bidirectional(LSTM(150, recurrent_dropout=0.3, kernel_regularizer=l2(0), return_sequences=True)))
-    model2.add(Dropout(0.3))
-    model2.add(Bidirectional(LSTM(150, recurrent_dropout=0.3, kernel_regularizer=l2(0), return_sequences=True)))
-    model2.add(Dropout(0.3))
-    model2.add(Attention())
-    model2.add(Dense(2, activity_regularizer=l2(0.0001)))
-    model2.add(Activation('softmax'))
-    model2.compile(optimizer=Adam(clipnorm=1, lr=0.001),
-                  loss='categorical_crossentropy',
-                  metrics=['acc'])
-    model2.summary()
-
-    earlystop = EarlyStopping(monitor='val_loss', min_delta=0.6, patience=5, \
-                          verbose=1, mode='auto')
-
-    filepath="angry-model-{epoch:02d}-{val_acc:.2f}.hdf5"
-    modelCheckpoint = keras.callbacks.ModelCheckpoint(filepath, monitor='val_loss', verbose=0, save_best_only=False, save_weights_only=False, mode='auto', period=1)
-
-    callbacks_list = [modelCheckpoint]
-    model2.fit(x_train_3, y_train_3, validation_data=(x_val_3, y_val_3),epochs=12, batch_size=128, callbacks=callbacks_list)
-    model2.save("./sad_model.h5")
-
-def create_model(embedding_layer):
-    model2 = Sequential()
-    model2.add(embedding_layer)
-    model2.add(GaussianNoise(0.3))
-    model2.add(Dropout(0.3))
-    model2.add(Bidirectional(LSTM(150, recurrent_dropout=0.3, kernel_regularizer=l2(0), return_sequences=True)))
-    model2.add(Dropout(0.3))
-    model2.add(Bidirectional(LSTM(150, recurrent_dropout=0.3, kernel_regularizer=l2(0), return_sequences=True)))
-    model2.add(Dropout(0.3))
-    model2.add(Attention())
-    model2.add(Dense(2, activity_regularizer=l2(0.0001)))
-    model2.add(Activation('softmax'))
-    model2.load_weights("angry.hdf5")
-    model2.compile(optimizer=Adam(clipnorm=1, lr=0.001),
-                  loss='categorical_crossentropy',
-                  metrics=['acc'])
-    model2.summary()
-    return model2
-
-
-def create_model1(embedding_layer):
-  model1 = Sequential()
-  model1.add(embedding_layer)
-  model1.add(Bidirectional(LSTM(100, recurrent_dropout=0.25, return_sequences=True)))
-  model1.add(Dropout(0.3))
-  model1.add(Bidirectional(LSTM(100,  recurrent_dropout=0.25)))
-  model1.add(Dense(64))
-  model1.add(LeakyReLU())
-  model1.add(Dense(4, activation='softmax'))
-  model1.load_weights("model_lstm-03-0.88.hdf5")
-  model1.compile(loss='categorical_crossentropy',
-            optimizer='Adam',
-            metrics=['acc'])
-  model1.summary()
-  return model1
-
-def model1(x_train, y_train, x_val, y_val, embedding_layer):
-  model1 = Sequential()
-  model1.add(embedding_layer)
-  model1.add(Bidirectional(LSTM(100, recurrent_dropout=0.25, return_sequences=True)))
-  model1.add(Dropout(0.3))
-  model1.add(Bidirectional(LSTM(100,  recurrent_dropout=0.25)))
-  model1.add(Dense(64))
-  model1.add(LeakyReLU())
-  model1.add(Dense(4, activation='softmax'))
-  model1.compile(loss='categorical_crossentropy',
-            optimizer='Adam',
-            metrics=['acc'])
-  model1.summary()
-  filepath="model_lstm-{epoch:02d}-{val_acc:.2f}.hdf5"
-  earlystop = EarlyStopping(monitor='val_loss', min_delta=0.6, patience=5, \
-                          verbose=1, mode='auto')
-  modelCheckpoint = keras.callbacks.ModelCheckpoint(filepath, monitor='val_loss', verbose=0, save_best_only=False, save_weights_only=False, mode='auto', period=1)
-  callbacks_list = [modelCheckpoint]
-  model1.fit(x_train, y_train, validation_data=(x_val, y_val),epochs=12, batch_size=50, callbacks=callbacks_list)
-  model1.save("./model1.h5")
-  return model1
-
-def phd_def_train():
+def bc_lstm_model_train():
     trainIndices, u1_train, u2_train, u3_train, labels  = data_preprocessing_semeval('../resources/train.txt', 'train')
     trainIndices, u1_test, u2_test, u3_test  = data_preprocessing_semeval('../resources/train.txt', 'test')
     print("Extracting tokens...")
@@ -279,7 +187,7 @@ def phd_def_train():
     print("Found %s unique tokens." % len(wordIndex))
 
     print("Populating embedding matrix...")
-    embedding_matrix = createEmbedingMatrix(wordIndex, '../resources/model2.kv', EMBEDDING_DIM)
+    embedding_matrix = createEmbedingMatrix(wordIndex, '../resources/model.kv', EMBEDDING_DIM)
 
     u1_data = pad_sequences(u1_trainSequences, maxlen=MAX_SEQUENCE_LENGTH)
     u2_data = pad_sequences(u2_trainSequences, maxlen=MAX_SEQUENCE_LENGTH)
@@ -308,7 +216,7 @@ def phd_def_train():
     model.fit([u1_data, u2_data, u3_data], labels,  epochs=NUM_EPOCHS, batch_size=BATCH_SIZE)
     model.save('semeval_phd.h5')
 
-def teacher_def_train():
+def train_model(network_model):
     x_train, y_train = data_preprocessing_teacher('../resources/train.txt', 'True')
     x_test = data_preprocessing_teacher('../resources/test.txt', 'False')
     all_tweet = x_train.append(x_test)
@@ -327,27 +235,20 @@ def teacher_def_train():
     nb_words=len(word_index)+1
 
     y_train = to_categorical(np.asarray(y_train), 4)
-    embedding_matrix =  createEmbeddingMatrixGlove(word_index, '../resources/model2.kv', EMBEDDING_DIM)
-    embedding_matrix_2 = createEmbeddingMatrix(word_index, '../resources/model2.kv', 300)
+    embedding_matrix =  createEmbeddingMatrixGlove(word_index, '../resources/model.kv', EMBEDDING_DIM)
 
-    embedding_layer_2 = Embedding(nb_words,
+    embedding_layer = Embedding(nb_words,
                             EMBEDDING_DIM,
                             weights=[embedding_matrix],
                             input_length=MAX_SEQUENCE_LENGTH,
                             trainable=True, name='embedding_layer')
 
-    embedding_layer_1 = Embedding(nb_words,
-                            EMBEDDING_DIM,
-                            weights=[embedding_matrix_2],
-                            input_length=MAX_SEQUENCE_LENGTH,
-                            trainable=True, name='embedding_layer')
-    
     split_idx = int(len(x_train)*0.95)
     x_train, x_val = data_train[:split_idx], data_train[split_idx:]
     y_train, y_val = y_train [:split_idx], y_train[split_idx:]
-    ss_lstm(x_train, y_train, x_val, y_val, embedding_layer_1, embedding_layer_2)
+    network_model(x_train, y_train, x_val, y_val, embedding_layer)
 
-def validation_teacher(modelPath):
+def validation_model(modelPath):
     x_train, y_train = data_preprocessing_teacher('../resources/train.txt', 'True')
     x_test= data_preprocessing_teacher('../resources/test.txt', 'False')
 
@@ -372,7 +273,7 @@ def validation_teacher(modelPath):
     indices_test = np.arange(data_test.shape[0])
     data_test = data_test[indices_test]
 
-    embedding_matrix = createEmbeddingMatrixGlove(word_index, '../resources/model2.kv', EMBEDDING_DIM)
+    embedding_matrix = createEmbeddingMatrixGlove(word_index, '../resources/model.kv', EMBEDDING_DIM)
 
     embedding_layer = Embedding(nb_words,
                             EMBEDDING_DIM,
@@ -380,14 +281,11 @@ def validation_teacher(modelPath):
                             input_length=MAX_SEQUENCE_LENGTH,
                             trainable=True, name='embedding_layer')
  
-    f = open("./test_custom.txt", "w")
+    f = open("./test.txt", "w")
     f.write("id\tturn1\tturn2\tturn3\tlabel\n")
-#    nn_model=load_model(modelPath, custom_objects={"Attention": Attention})
-    nn_model = create_custom_model(embedding_layer)
+    nn_model = create_custom_model(embedding_layer, modelPath)
     r = nn_model.predict(data_test)
-    print(r)
-    data = pd.read_csv("../resources/test.txt", sep='\t', encoding='utf-8',     names=['id','turn1','turn2','turn3'])
-    
+    data = pd.read_csv("../resources/test.txt", sep='\t', encoding='utf-8', names=['id','turn1','turn2','turn3'])
     for d in range(1,len(data)):
         i=d-1 
         idx=np.argmax(r[i])
@@ -400,10 +298,9 @@ def validation_teacher(modelPath):
         elif(idx==0):
             label="angry"
         f.write(str(data["id"][d])+"\t"+str(data["turn1"][d])+"\t"+str(data["turn2"][d])+"\t"+str(data["turn3"][d])+"\t"+label+"\n")
-    # print(str(data["id"][d])+"\t"+str(data["turn1"][d])+"\t"+str(data["turn2"][d])+"\t"+str (data["turn3"][d])+"\t"+label)
     f.close()
 
-def validation_phd(modelFile):
+def validation_bc_lstm_model(modelFile):
     print("Processing training data...")
     train_indices, u1_train, u2_train, u3_train, labels = data_preprocessing_semeval('../resources/train.txt', 'train')
     print("Processing test data...")
@@ -420,7 +317,7 @@ def validation_phd(modelFile):
     print("Found %s unique tokens." % len(wordIndex))
 
     print("Populating embedding matrix...")
-    embedding_matrix = createEmbedingMatrix(wordIndex, '../resources/model2.kv', EMBEDDING_DIM)
+    embedding_matrix = createEmbedingMatrix(wordIndex, '../resources/model.kv', EMBEDDING_DIM)
 
     u1_data = pad_sequences(u1_trainSequences, maxlen=MAX_SEQUENCE_LENGTH)
     u2_data = pad_sequences(u2_trainSequences, maxlen=MAX_SEQUENCE_LENGTH)
@@ -440,6 +337,6 @@ def validation_phd(modelFile):
                     fout.write(label2emotion[predictions[lineNum]] + '\n')
             print('Completed. Model parameters: ')
 
-#phd_def_train()
-#teacher_def_train()
-validation_teacher('model_project_1.h5')# ./semeval_teacher_bis.h5')
+
+def main():
+    train_model(lstm_model)
