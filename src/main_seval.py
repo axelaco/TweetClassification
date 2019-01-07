@@ -248,7 +248,7 @@ def train_model(network_model):
     y_train, y_val = y_train [:split_idx], y_train[split_idx:]
     network_model(x_train, y_train, x_val, y_val, embedding_layer)
 
-def validation_model(modelPath):
+def validation_model(modelPath, model_load):
     x_train, y_train = data_preprocessing_teacher('../resources/train.txt', 'True')
     x_test= data_preprocessing_teacher('../resources/test.txt', 'False')
 
@@ -273,7 +273,7 @@ def validation_model(modelPath):
     indices_test = np.arange(data_test.shape[0])
     data_test = data_test[indices_test]
 
-    embedding_matrix = createEmbeddingMatrixGlove(word_index, '../resources/model.kv', EMBEDDING_DIM)
+    embedding_matrix = createEmbeddingMatrixGlove(word_index, 'glove.twitter.27B.200d.txt', EMBEDDING_DIM)
 
     embedding_layer = Embedding(nb_words,
                             EMBEDDING_DIM,
@@ -283,7 +283,7 @@ def validation_model(modelPath):
  
     f = open("./test.txt", "w")
     f.write("id\tturn1\tturn2\tturn3\tlabel\n")
-    nn_model = create_custom_model(embedding_layer, modelPath)
+    nn_model = model_load(embedding_layer, modelPath)
     r = nn_model.predict(data_test)
     data = pd.read_csv("../resources/test.txt", sep='\t', encoding='utf-8', names=['id','turn1','turn2','turn3'])
     for d in range(1,len(data)):

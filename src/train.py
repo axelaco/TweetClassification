@@ -23,7 +23,6 @@ from word2vecUtils import afin, emojiValence, depechMood, emolex, \
   emojiSentimentLexicon, opinionLexiconEnglish
 from sklearn.model_selection import StratifiedKFold
 
-word2vec_tweet = pickle.load(open('../resources/datastories.twitter.300d.pickle', 'rb'))
 EMBEDDING_DIM = 200
 
 # Word2Vec to KeyedVectors 
@@ -94,10 +93,9 @@ def createEmbeddingMatrixGlove(word_index, w2vpath, dim):
     oov = oov / np.linalg.norm(oov)
     embeddingsIndex = {}
     # Load the embedding vectors from ther GloVe file
-    with io.open(os.path.join('../resources', 'glove.twitter.27B.200d.txt'), encoding="utf8") as f:
+    with io.open(os.path.join('../resources', w2vpath), encoding="utf8") as f:
         for line in f:
             values = line.split(' ')
-           # print(values)
             word = values[0]
             embeddingVector = np.array([float(val) for val in values[1:]])
             embeddingsIndex[word] = embeddingVector
@@ -108,7 +106,6 @@ def createEmbeddingMatrixGlove(word_index, w2vpath, dim):
     for word, i in word_index.items():
         embeddingVector = embeddingsIndex.get(word)
         if embeddingVector is not None:
-            # words not found in embedding index will be all-zeros.
             embeddingMatrix[i] = embeddingVector
         else:
             embeddingMatrix[i] = oov
@@ -121,6 +118,8 @@ def createEmbedingMatrix(word_index, w2vpath, dim):
     oov = oov / np.linalg.norm(oov)
 
     path = "../resources/embeding"
+    
+    word2vec_tweet = pickle.load(open(os.path.join('../resources', w2vpath), 'rb'))
 
     for word, i in word_index.items():
         if word in word2vec_tweet: 
