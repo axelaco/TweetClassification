@@ -235,7 +235,7 @@ def train_model(network_model):
     nb_words=len(word_index)+1
 
     y_train = to_categorical(np.asarray(y_train), 4)
-    embedding_matrix =  createEmbeddingMatrixGlove(word_index, '../resources/model.kv', EMBEDDING_DIM)
+    embedding_matrix =  createEmbeddingMatrixGlove(word_index,  'glove.twitter.27B.200d.txt', EMBEDDING_DIM)
 
     embedding_layer = Embedding(nb_words,
                             EMBEDDING_DIM,
@@ -337,6 +337,5 @@ def validation_bc_lstm_model(modelFile):
                     fout.write(label2emotion[predictions[lineNum]] + '\n')
             print('Completed. Model parameters: ')
 
-
-def main():
-    train_model(lstm_model)
+if __name__ == "__main__":
+  train_model(lstm_model)
